@@ -25,6 +25,7 @@ Settings → Controls.
 | Heavy bomb bay | `V / B` | The ring on the ground is where it will land, drawn at its true blast radius. A bomb keeps your speed, so it lands well ahead of you. |
 | Engine Cut / Newtonian Drift | `C` | Cut propulsion and coast on momentum, turning freely. Press again — or boost — to relight. |
 | Countermeasure flares | `X` | Burns every hostile round within 40 u. Five per run — the answer to being cornered, not to being shot at. |
+| Launch escort drones | `H` | They fly your wing for 20 s and shoot on their own. Bring them home alive and the next launch is bigger — lose one and you start again at a single drone. |
 | Orbital map | `M` | Held, not toggled. The rings are seconds of flight at cruise. |
 | Recentre aim | `R` |  |
 | Pause | `Esc / P` |  |
@@ -44,6 +45,7 @@ Settings → Controls.
 | Heavy bomb bay | `V / B` | The ring on the ground is where it will land, drawn at its true blast radius. A bomb keeps your speed, so it lands well ahead of you. |
 | Engine Cut / Newtonian Drift | `C` | Cut propulsion and coast on momentum, turning freely. Press again — or boost — to relight. |
 | Countermeasure flares | `X` | Burns every hostile round within 40 u. Five per run — the answer to being cornered, not to being shot at. |
+| Launch escort drones | `H` | They fly your wing for 20 s and shoot on their own. Bring them home alive and the next launch is bigger — lose one and you start again at a single drone. |
 | Orbital map | `M` | Held, not toggled. The rings are seconds of flight at cruise. |
 | Recentre aim | `R` |  |
 | Pause | `Esc / P` |  |
@@ -63,6 +65,7 @@ Settings → Controls.
 | Heavy bomb bay | `V / B` | The ring on the ground is where it will land, drawn at its true blast radius. A bomb keeps your speed, so it lands well ahead of you. |
 | Engine Cut / Newtonian Drift | `C` | Cut propulsion and coast on momentum, turning freely. Press again — or boost — to relight. |
 | Countermeasure flares | `X` | Burns every hostile round within 40 u. Five per run — the answer to being cornered, not to being shot at. |
+| Launch escort drones | `H` | They fly your wing for 20 s and shoot on their own. Bring them home alive and the next launch is bigger — lose one and you start again at a single drone. |
 | Orbital map | `M` | Held, not toggled. The rings are seconds of flight at cruise. |
 | Recentre aim | `R` |  |
 | Pause | `Esc / P` |  |
@@ -82,6 +85,7 @@ Settings → Controls.
 | Heavy bomb bay | the 💣 bomb button |
 | Engine Cut / Newtonian Drift | the FLOAT button |
 | Countermeasure flares | the ◈ flare button |
+| Launch escort drones | the 🛰 drone button |
 | Orbital map | the map button |
 | Pause | the ❚❚ button |
 

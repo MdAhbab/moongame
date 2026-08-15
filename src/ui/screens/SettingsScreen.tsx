@@ -17,7 +17,7 @@ import { platformName, resolveControls } from '../../platform/controlScheme'
 const BINDABLE_ACTIONS: readonly Action[] = [
   'turnLeft', 'turnRight', 'strafeLeft', 'strafeRight',
   'ascend', 'descend', 'boost', 'brake', 'engineCut',
-  'fire', 'lock', 'bomb', 'switchWeapon', 'flare', 'map', 'pause', 'recentre',
+  'fire', 'lock', 'bomb', 'switchWeapon', 'flare', 'deployDrones', 'map', 'pause', 'recentre',
 ]
 
 const ACTION_LABELS: Record<Action, string> = {
@@ -36,6 +36,7 @@ const ACTION_LABELS: Record<Action, string> = {
   engineCut: 'Engine Cut / Float',
   flare: 'Flares',
   boost: 'Boost',
+  deployDrones: 'Launch Escort Drones',
   map: 'Orbital Map',
   pause: 'Pause',
   recentre: 'Recentre Aim',

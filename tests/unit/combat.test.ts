@@ -12,10 +12,11 @@ import { stepAI } from '../../src/game/systems/AISystem'
 import { stepInput } from '../../src/game/systems/InputSystem'
 import { stepWeapons } from '../../src/game/systems/WeaponSystem'
 import { damageCraft, damageEnemy } from '../../src/game/systems/CollisionSystem'
-import { stepDrones } from '../../src/game/entities/Drone'
+import { damageDrone, sortieDuration, stepDrones } from '../../src/game/entities/Drone'
 import { PERKS } from '../../src/game/data/perks'
 import {
   CRAFT_MUZZLE_OFFSET,
+  DRONE_HULL,
   EXPOSED_DAMAGE_MULTIPLIER,
   FIXED_DT,
   RESPAWN_TIME,
@@ -148,48 +149,104 @@ describe('every perk is real', () => {
     expect(unimplemented.map((p) => p.id)).toEqual([])
   })
 
-  it('offers the drone again while under its cap, and never anything else twice', async () => {
+  it('tells the player what to press, on every card', () => {
+    // The cards used to end on a flavour quote, which meant a player could hold
+    // Helios Solar Lance for a whole run without ever learning that the trigger
+    // is the ordinary fire key. Every perk owes an instruction.
+    for (const perk of PERKS) {
+      expect(perk.howToUse.length, `${perk.id} has no how-to text`).toBeGreaterThan(20)
+    }
+  })
+
+  it('never offers a perk the run already holds', async () => {
     const { drawRandomPerks } = await import('../../src/game/data/perks')
-    const held = ['escort_drone', 'nanite_regen']
+    // Nothing stacks now that the drone bay is an ability rather than a card,
+    // so "already held" is the only rule the draw has to keep.
+    const held = ['nanite_regen', 'aegis_shield']
     for (let i = 0; i < 40; i++) {
-      const drawn = drawRandomPerks(held, undefined, 3)
-      for (const perk of drawn) {
-        if (perk.id === 'escort_drone') continue
+      for (const perk of drawRandomPerks(held, undefined, 3)) {
         expect(held.includes(perk.id), `${perk.id} was offered twice`).toBe(false)
       }
-    }
-
-    // At the cap it stops being offered at all.
-    const full = ['escort_drone', 'escort_drone', 'escort_drone', 'escort_drone']
-    for (let i = 0; i < 40; i++) {
-      const drawn = drawRandomPerks(full, undefined, 3)
-      expect(drawn.some((p) => p.id === 'escort_drone')).toBe(false)
     }
   })
 })
 
 describe('escort drones', () => {
-  it('appear and disappear with the perk that grants them', () => {
+  it('launches on the key, flies its sortie, and lands on the clock', () => {
     const world = createWorld('drones', 3)
     expect(world.drones.pool.count).toBe(0)
 
-    world.activePerks.push('escort_drone')
-    stepDrones(world, FIXED_DT)
-    expect(world.drones.pool.count).toBe(1)
+    // Held-but-not-pressed does nothing: the bay reads the edge, so leaning on
+    // the key cannot re-launch a sortie the moment the last one lands.
+    world.input.deployDrones = true
+    stepWorld(world, FIXED_DT)
+    expect(world.drones.pool.count, 'tier 1 puts up exactly one drone').toBe(1)
+    expect(world.droneBay.deployed).toBe(1)
 
-    world.activePerks.push('escort_drone')
-    stepDrones(world, FIXED_DT)
-    expect(world.drones.pool.count, 'the perk stacks').toBe(2)
+    stepWorld(world, FIXED_DT)
+    expect(world.drones.pool.count, 'and holding the key does not add more').toBe(1)
 
-    world.activePerks.length = 0
+    // Fly the sortie out.
+    for (let i = 0; i < Math.ceil(sortieDuration(1) / FIXED_DT) + 2; i++) {
+      stepWorld(world, FIXED_DT)
+    }
+    expect(world.drones.pool.count, 'they go home when the clock runs out').toBe(0)
+    expect(world.droneBay.tier, 'and a clean sortie earns the next tier').toBe(2)
+    expect(world.droneBay.cooldown).toBeGreaterThan(0)
+  })
+
+  it('will not relaunch until the cooldown expires', () => {
+    const world = createWorld('drones', 3)
+    world.droneBay.cooldown = 5
+    world.input.deployDrones = true
+    world.input.deployDronesPressed = true
     stepDrones(world, FIXED_DT)
-    expect(world.drones.pool.count, 'and they go when it does').toBe(0)
+    expect(world.drones.pool.count, 'the bay is still closed').toBe(0)
+  })
+
+  it('resets to one drone when the formation is shot down', () => {
+    const world = createWorld('drones', 3)
+    world.droneBay.tier = 3
+
+    world.input.deployDrones = true
+    stepWorld(world, FIXED_DT)
+    expect(world.drones.pool.count, 'tier 3 puts up three').toBe(3)
+
+    // Kill them all. Losing the sortie, not the clock, is what resets the tier.
+    for (let i = world.drones.pool.count - 1; i >= 0; i--) {
+      damageDrone(world, world.drones.pool.dense[i] as number, DRONE_HULL * 2)
+    }
+    stepWorld(world, FIXED_DT)
+
+    expect(world.drones.pool.count).toBe(0)
+    expect(world.droneBay.tier, 'the ladder starts over').toBe(1)
+  })
+
+  it('takes the formation down with the craft', () => {
+    const world = createWorld('drones', 3)
+    world.droneBay.tier = 3
+    world.input.deployDrones = true
+    stepWorld(world, FIXED_DT)
+    expect(world.drones.pool.count).toBe(3)
+
+    world.craft.hull = 1
+    damageCraft(world, 50, { x: 1, y: 0, z: 0 })
+    stepWorld(world, FIXED_DT)
+
+    // Nothing steps the weapon system during `Respawning`, so drones left in
+    // the pool would hang motionless in the sky for the whole respawn.
+    expect(world.phase.kind).toBe('Respawning')
+    expect(world.drones.pool.count, 'the escort dies with you').toBe(0)
+    expect(world.droneBay.tier, 'and the ladder starts over').toBe(1)
   })
 
   it('engages a nearby enemy on its own', () => {
     const world = createWorld('drones', 3)
-    world.activePerks.push('escort_drone')
+    // Straight to the edge: this test drives `stepDrones` rather than the whole
+    // world, so nothing upstream is deriving press edges from held flags.
+    world.input.deployDronesPressed = true
     stepDrones(world, FIXED_DT)
+    world.input.deployDronesPressed = false
 
     const craft = world.craft
     const enemy = world.enemies.pool.alloc()
@@ -247,9 +304,9 @@ describe('subsystem damage', () => {
 })
 
 describe('death and respawn', () => {
-  it('respawns rather than freezing, and strips the build down to one legendary', () => {
+  it('respawns rather than freezing, and offers three legendaries', () => {
     const world = createWorld('death', 5)
-    world.activePerks.push('nanite_regen', 'escort_drone', 'aegis_shield')
+    world.activePerks.push('nanite_regen', 'aegis_shield')
 
     // Kill the craft.
     world.craft.hull = 1
@@ -270,10 +327,15 @@ describe('death and respawn', () => {
     expect(world.craft.systems.engine, 'a respawn is a new airframe').toBe(1)
     expect(world.craft.systems.weapon).toBe(1)
     expect(world.craft.systems.control).toBe(1)
-    expect(world.activePerks.length, 'the build is wiped down to a single perk').toBe(1)
+    expect(world.activePerks.length, 'the build is wiped').toBe(0)
 
-    const survivor = PERKS.find((perk) => perk.id === world.activePerks[0])
-    expect(survivor?.rarity, 'and that perk is a legendary').toBe('legendary')
+    // The replacement is a *choice* now, so the simulation offers rather than
+    // grants — three distinct legendaries for the UI to put in front of you.
+    expect(world.legendaryOffer.length, 'three cards are offered').toBe(3)
+    expect(new Set(world.legendaryOffer).size, 'and they are distinct').toBe(3)
+    for (const id of world.legendaryOffer) {
+      expect(PERKS.find((perk) => perk.id === id)?.rarity).toBe('legendary')
+    }
   })
 })
 

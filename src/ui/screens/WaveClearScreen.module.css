@@ -289,6 +289,36 @@
   padding-top: 4px;
 }
 
+/*
+ * The instructions, and they are styled to be *read* rather than admired —
+ * left-aligned body text at the same size as the description, not the
+ * small-caps HUD face the flavour line used. This is the part of the card a
+ * player acts on.
+ */
+.perkHowTo {
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  margin-top: 6px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+  padding-top: 6px;
+  text-align: left;
+}
+
+.perkHowTo strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.perkHowToLabel {
+  display: inline-block;
+  font-family: var(--font-hud);
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  color: var(--caution);
+  margin-right: 6px;
+}
+
 /* Actions */
 .actions {
   opacity: 0;
@@ -331,4 +361,19 @@
     opacity: 1;
     transform: none;
   }
+}
+
+/* The one line of prose on the salvage draft. */
+.salvageNote {
+  max-width: 46ch;
+  margin: 0 auto 18px;
+  text-align: center;
+  font-size: var(--text-label, 0.8rem);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.salvageNote strong {
+  color: var(--text-primary);
+  font-weight: 600;
 }

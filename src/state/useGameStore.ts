@@ -28,6 +28,7 @@ export type Screen =
   | 'Playing'
   | 'Paused'
   | 'WaveClear'
+  | 'LegendaryChoice'
   | 'Debrief'
   | 'Results'
   | 'Credits'

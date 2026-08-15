@@ -44,6 +44,7 @@ import {
   MISSILE_FLAME_RATE,
   TRACER_MAX_LENGTH,
   TRACER_MIN_LENGTH,
+  TRACER_RADIUS,
   TRACER_REFERENCE_HZ,
   WINDUP_FLASH_RATE,
   WINDUP_SWELL,
@@ -128,6 +129,20 @@ function orientStreak(
   // right after a stall it drew bars longer than the craft.
   const streak = Math.min(TRACER_MAX_LENGTH, Math.max(TRACER_MIN_LENGTH, speed / TRACER_REFERENCE_HZ))
   target.scale.set(1, 1, streak)
+
+  // Hang the streak *behind* the round rather than centred on it.
+  //
+  // The capsule is modelled around its own origin, so scaling it grew the bar
+  // in both directions and put half of it in front of the projectile — the
+  // round drew about two units ahead of where the simulation says it is, and
+  // lengthening the streak made the lead worse. A smear is the ground the
+  // round has already covered, so the leading edge belongs *at* the position
+  // and everything else trails it. Half the scaled extent, and the extent is
+  // the unit cylinder plus its two hemispherical caps.
+  if (speed > 1e-4) {
+    const half = streak * (1 + 2 * TRACER_RADIUS) * 0.5
+    target.position.addScaledVector(dir, -half)
+  }
   target.updateMatrix()
 }
 

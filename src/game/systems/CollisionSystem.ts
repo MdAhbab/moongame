@@ -19,6 +19,7 @@ import { type Vec3, create, dot, length, normalize, sub, copy } from '../math/ve
 import { sweepSphere, sweepSphereMoving } from '../physics/collision/sweptSphere.ts'
 import { applyImpulse, separateSpheres } from '../physics/collision/response.ts'
 import { sentinelBlocks } from '../entities/Sentinel.ts'
+import { damageDrone } from '../entities/Drone.ts'
 import { archetypeOf } from '../data/enemies.ts'
 import { awardKill, registerHit } from './ScoreSystem.ts'
 import { emitBurst } from './ParticleSystem.ts'
@@ -26,6 +27,7 @@ import { noteTutorialKill } from './TutorialSystem.ts'
 import {
   HIT_IMPULSE,
   CRAFT_MASS,
+  DRONE_RADIUS,
   EXPOSED_DAMAGE_MULTIPLIER,
   MAX_ENEMIES,
   PARTICLES_IMPACT,
@@ -43,6 +45,8 @@ import {
 
 const origin: Vec3 = create()
 const velocity: Vec3 = create()
+const dronePoint: Vec3 = create()
+const droneVelocity: Vec3 = create()
 const centre: Vec3 = create()
 const centreVelocity: Vec3 = create()
 const incoming: Vec3 = create()
@@ -57,6 +61,7 @@ export function stepCollision(world: World, dt: number): void {
   playerProjectilesVsEnemies(world, dt)
   missilesVsEnemies(world, dt)
   enemyProjectilesVsCraft(world, dt)
+  enemyProjectilesVsDrones(world, dt)
   craftVsEnemies(world)
 }
 
@@ -257,6 +262,66 @@ function enemyProjectilesVsCraft(world: World, dt: number): void {
     damageCraft(world, (store.damage[slot] as number) * world.difficulty.enemyDamage * world.loadout.damageTaken, incoming)
     emitBurst(world, hit.x, hit.y, hit.z, 8, 20, 0.2, 0.28, 'hostile', 0.6, null, false)
     store.pool.release(slot)
+  }
+}
+
+/**
+ * Enemy fire against the escort formation (§7.4).
+ *
+ * Drones have to be killable for the bay's ladder to mean anything — the tier
+ * resets when a sortie is lost, and without this nothing could ever lose one.
+ * Run after the craft sweep so a round that would hit both spends itself on the
+ * player: the drone is the thing you are trying to protect, and a round that
+ * passed through you to kill it would read as the game cheating.
+ *
+ * Deliberately *not* difficulty-scaled. The accessibility axes exist so a
+ * player can lower what the game does to *them*; quietly making their escort
+ * immortal too would hand out a second, undisclosed advantage.
+ * @hot-path
+ */
+function enemyProjectilesVsDrones(world: World, dt: number): void {
+  const drones = world.drones
+  if (drones.pool.count === 0) return
+
+  const store = world.enemyProjectiles
+  const { pool, body } = store
+
+  for (let i = pool.count - 1; i >= 0; i--) {
+    const slot = pool.dense[i] as number
+
+    origin.x = body.prevX[slot] as number
+    origin.y = body.prevY[slot] as number
+    origin.z = body.prevZ[slot] as number
+    velocity.x = body.vx[slot] as number
+    velocity.y = body.vy[slot] as number
+    velocity.z = body.vz[slot] as number
+
+    // Reverse order: `damageDrone` releases the slot on a kill, and walking the
+    // dense list forwards across a release skips whatever backfills it.
+    for (let d = drones.pool.count - 1; d >= 0; d--) {
+      const drone = drones.pool.dense[d] as number
+      dronePoint.x = drones.body.x[drone] as number
+      dronePoint.y = drones.body.y[drone] as number
+      dronePoint.z = drones.body.z[drone] as number
+      droneVelocity.x = drones.body.vx[drone] as number
+      droneVelocity.y = drones.body.vy[drone] as number
+      droneVelocity.z = drones.body.vz[drone] as number
+
+      const hit = sweepSphereMoving(
+        origin,
+        velocity,
+        dt,
+        dronePoint,
+        droneVelocity,
+        DRONE_RADIUS + RADIUS_PROJECTILE,
+      )
+      if (hit === null) continue
+
+      damageDrone(world, drone, store.damage[slot] as number)
+      emitBurst(world, hit.x, hit.y, hit.z, 6, 18, 0.18, 0.24, 'hostile', 0.5, null, false)
+      store.pool.release(slot)
+      break
+    }
   }
 }
 

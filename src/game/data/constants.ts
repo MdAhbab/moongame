@@ -411,6 +411,46 @@ export const DRONE_BULLET_SPEED = 130
  */
 export const DRONE_DAMAGE = 0.34
 
+/* ---- The drone bay, as a called ability ---------------------------- */
+
+/**
+ * Escort drones are summoned, not drafted.
+ *
+ * As a stacking perk they were invisible: the draft offers three of eighteen
+ * perks after a wave, so a player could finish a run having never once seen a
+ * drone, and the whole subsystem — formation flight, target selection, lead
+ * calculation — was content most players never met. Worse, "a thing that is
+ * quietly always there" is the one shape a power fantasy cannot take.
+ *
+ * Called on a key, it becomes a decision with a clock on it: you spend it, you
+ * watch it work, and you get it back if you kept them alive.
+ */
+
+/** Seconds the first sortie stays out. */
+export const DRONE_SORTIE_BASE_DURATION = 20
+/** Added to the sortie length per tier earned, s. */
+export const DRONE_SORTIE_DURATION_STEP = 5
+/**
+ * Seconds before the bay can launch again, counted from when the last sortie
+ * ended.
+ *
+ * Longer than the shortest sortie on purpose: with a cooldown under the
+ * duration the correct play would be to hold the key down forever, and an
+ * ability that is always up is just a passive with extra steps.
+ */
+export const DRONE_SORTIE_COOLDOWN = 30
+/**
+ * Hull per drone.
+ *
+ * Low, and deliberately so. The tier ladder only means something if losing the
+ * formation is a real risk — a drone that survives everything would make the
+ * reset condition unreachable and the ladder a formality. Two Interceptor
+ * passes will take one down.
+ */
+export const DRONE_HULL = 6
+/** Contact radius for enemy fire, u. */
+export const DRONE_RADIUS = 1.1
+
 /** §7.4 — Boost. */
 export const BOOST_DURATION = 3
 export const BOOST_RECHARGE = 6

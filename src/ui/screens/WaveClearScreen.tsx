@@ -199,7 +199,13 @@ export function WaveClearScreen({
                     </div>
                     <div className={styles.perkTitle}>{perk.name}</div>
                     <div className={styles.perkDesc}>{perk.description}</div>
-                    <div className={styles.perkBuffText}>{perk.quote}</div>
+                    {/* What to press. Half these perks re-arm a control the
+                        player already has, and the card used to end on a
+                        flavour line instead of saying so. */}
+                    <div className={styles.perkHowTo}>
+                      <span className={styles.perkHowToLabel}>HOW</span>
+                      {perk.howToUse}
+                    </div>
                   </button>
                 )
               })}

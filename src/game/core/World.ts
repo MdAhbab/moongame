@@ -151,6 +151,12 @@ export const GameEvent = {
   SystemsRepaired: 27,
   /** An escort drone fired. `a` is the drone slot. */
   DroneFired: 28,
+  /** A sortie launched. `a` is how many drones, `b` its duration. */
+  DronesLaunched: 29,
+  /** A sortie ended. `a` is the *next* tier, `b` is 1 when it was shot down. */
+  DronesRecalled: 30,
+  /** A drone was destroyed. `a` is its slot. */
+  DroneDestroyed: 31,
 } as const
 export type GameEventType = (typeof GameEvent)[keyof typeof GameEvent]
 
@@ -355,7 +361,7 @@ export class MissileStore {
   readonly target = new Int32Array(MAX_MISSILES)
 }
 
-/** Escort drones (§7.4). One per pick of the drone perk, capped here. */
+/** Escort drones (§7.4). Also the top tier of the drone bay. */
 export const MAX_DRONES = 4
 
 /**
@@ -363,9 +369,9 @@ export const MAX_DRONES = 4
  *
  * They fly a formation slot rather than a physics body: a drone that had to be
  * flown would need its own flight model, its own collision and its own failure
- * modes, and none of that is what the perk is *for*. It is for a second gun that
- * follows you. So the position is a spring toward an orbiting anchor, which
- * keeps them legible in a dogfight and costs nothing.
+ * modes, and none of that is what the ability is *for*. It is for a second gun
+ * that follows you. So the position is a spring toward an orbiting anchor,
+ * which keeps them legible in a dogfight and costs nothing.
  */
 export class DroneStore {
   readonly pool = new Pool(MAX_DRONES)
@@ -375,6 +381,39 @@ export class DroneStore {
   readonly fireCooldown = new Float32Array(MAX_DRONES)
   /** Enemy slot currently engaged, or -1. */
   readonly target = new Int32Array(MAX_DRONES)
+  /** Remaining hull. Enemy fire takes drones out of the formation (§7.4). */
+  readonly health = new Float32Array(MAX_DRONES)
+}
+
+/**
+ * The drone bay — a called ability with a ladder attached.
+ *
+ * `tier` is the size of the *next* sortie and the whole point of the mechanic:
+ * bring the formation home alive and it grows, lose one and it starts over. So
+ * the interesting decision is not when to press the key, it is whether to keep
+ * flying aggressively while four drones you have spent three sorties earning
+ * are following you into it.
+ *
+ * `sortieLost` is tracked rather than inferred from the pool count, because by
+ * the time a sortie ends the pool is empty either way — expiring cleanly and
+ * being wiped out look identical from the outside, and they mean opposite
+ * things.
+ */
+export interface DroneBay {
+  /** Drones the next launch will put up, 1..MAX_DRONES. */
+  tier: number
+  /** Drones currently deployed. Zero when the bay is stowed. */
+  deployed: number
+  /** Seconds of sortie left. */
+  remaining: number
+  /** Seconds until the bay can launch again. */
+  cooldown: number
+  /** True once anything has been shot down this sortie. */
+  sortieLost: boolean
+}
+
+export function createDroneBay(): DroneBay {
+  return { tier: 1, deployed: 0, remaining: 0, cooldown: 0, sortieLost: false }
 }
 
 export const MAX_BOMBS = 16
@@ -624,6 +663,8 @@ export interface InputState {
   switchWeapon: boolean
   engineCutToggle: boolean
   boosting: boolean
+  /** Held state of the drone-bay key. Read only through its press edge. */
+  deployDrones: boolean
   /** Set by touch "tap a target" and by the keyboard-only path (§8.1). */
   requestLockTarget: number
 
@@ -643,6 +684,8 @@ export interface InputState {
   engineCutPressed: boolean
   bombPressed: boolean
   flarePressed: boolean
+  /** Launches the drone bay. An act, so only the edge is ever read. */
+  deployDronesPressed: boolean
 }
 
 /**
@@ -658,10 +701,11 @@ export interface InputPrevious {
   engineCut: boolean
   bombing: boolean
   flaring: boolean
+  deployDrones: boolean
 }
 
 export function createInputPrevious(): InputPrevious {
-  return { switchWeapon: false, engineCut: false, bombing: false, flaring: false }
+  return { switchWeapon: false, engineCut: false, bombing: false, flaring: false, deployDrones: false }
 }
 
 export function createInputState(): InputState {
@@ -678,11 +722,13 @@ export function createInputState(): InputState {
     switchWeapon: false,
     engineCutToggle: false,
     boosting: false,
+    deployDrones: false,
     requestLockTarget: -1,
     switchWeaponPressed: false,
     engineCutPressed: false,
     bombPressed: false,
     flarePressed: false,
+    deployDronesPressed: false,
   }
 }
 
@@ -816,6 +862,16 @@ export interface World {
   readonly missiles: MissileStore
   readonly bombs: BombStore
   readonly drones: DroneStore
+  /** Launch state for the escort ability (§7.4). */
+  droneBay: DroneBay
+  /**
+   * Three legendary ids offered after a destruction, or empty.
+   *
+   * Non-empty is what tells the UI to stop and ask. Drawn in the simulation so
+   * the offer is seeded and reproducible; *chosen* in React, the same way the
+   * post-wave draft has always worked.
+   */
+  legendaryOffer: string[]
   readonly particles: ParticleStore
 
   readonly grid: BucketGrid
@@ -979,6 +1035,8 @@ export function createWorld(runSeed: string, seedValue: number): World {
     missiles: new MissileStore(),
     bombs: new BombStore(),
     drones: new DroneStore(),
+    droneBay: createDroneBay(),
+    legendaryOffer: [],
     particles: new ParticleStore(),
     grid: new BucketGrid(MAX_ENEMIES + MAX_PLAYER_PROJECTILES + MAX_ENEMY_PROJECTILES + MAX_MISSILES + MAX_BOMBS),
     events: new EventQueue(),
@@ -1028,6 +1086,8 @@ export function resetWorldForRun(world: World): void {
   world.tutorialBeat = -1
   world.tutorialProgress = 0
   world.activePerks = []
+  world.legendaryOffer = []
+  world.droneBay = createDroneBay()
   world.credits = 0
 
   const fresh = createCraft()

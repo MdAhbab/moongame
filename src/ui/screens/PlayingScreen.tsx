@@ -87,7 +87,7 @@ export function PlayingScreen({ showHint = true }: { showHint?: boolean }) {
             <span className={styles.systemPip} ref={(el) => { hudRefs.systemEngine = el }} title="Engine">⚙ ENG</span>
             <span className={styles.systemPip} ref={(el) => { hudRefs.systemWeapon = el }} title="Weapon bay">⌁ WPN</span>
             <span className={styles.systemPip} ref={(el) => { hudRefs.systemControl = el }} title="Stabiliser">⇅ CTL</span>
-            <span className={styles.dronePip} ref={(el) => { hudRefs.droneCount = el }} style={{ display: 'none' }}>🛰 0</span>
+            <span className={styles.dronePip} ref={(el) => { hudRefs.droneCount = el }} style={{ display: 'none' }}>🛰 ×1 READY</span>
             <span className={styles.lancePip} ref={(el) => { hudRefs.lanceCharge = el }} style={{ display: 'none' }}>☀ 0%</span>
           </div>
         </div>

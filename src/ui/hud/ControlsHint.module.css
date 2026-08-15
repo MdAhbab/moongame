@@ -22,7 +22,7 @@
   border-radius: 4px;
   backdrop-filter: blur(6px);
 
-  animation: hint-in 400ms ease-out both, hint-out 900ms ease-in 18s both;
+  animation: hint-in 400ms ease-out both, hint-out 900ms ease-in 8s both;
 }
 
 /* The tutorial keeps its card up: there, reading it *is* the task. */
@@ -81,9 +81,29 @@
   to { opacity: 0; visibility: hidden; }
 }
 
-/* A card that fades on its own is motion the player did not ask for. */
+/*
+ * Reduced motion means *no movement*, not "stays forever".
+ *
+ * `animation: none` was the bug: it cancelled the dismissal along with the
+ * slide, so a player who had asked for less motion got a card that never left
+ * — permanently covering the bottom of the HUD for the whole run. That is a
+ * strictly worse outcome than the animation they opted out of.
+ *
+ * So: keep the timing, drop the travel. It appears and disappears without
+ * sliding or fading, which is what the preference actually asks for.
+ */
 @media (prefers-reduced-motion: reduce) {
   .hint {
+    animation: hint-hold 8.9s step-end both;
+  }
+
+  .persistent {
     animation: none;
   }
+}
+
+@keyframes hint-hold {
+  from { opacity: 1; }
+  99.9% { opacity: 1; }
+  to { opacity: 0; visibility: hidden; }
 }

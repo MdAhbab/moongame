@@ -65,6 +65,9 @@ export function projectHudFrame(world: Readonly<World>, out: HudFrame): void {
   out.weaponIntegrity = craft.systems.weapon
   out.controlIntegrity = craft.systems.control
   out.drones = world.drones.pool.count
+  out.droneRemaining = world.droneBay.remaining > 0 ? world.droneBay.remaining : 0
+  out.droneCooldown = world.droneBay.cooldown
+  out.droneTier = world.droneBay.tier
   out.lanceCharge = craft.lanceCharge
   out.underAttackRun = anyAttackRun(world)
   projectTarget(world, out)

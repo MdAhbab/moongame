@@ -39,7 +39,7 @@ const THROTTLE_RANGE = 58
 /** Horizontal travel in px for full lateral deflection on the slide rocker. */
 const SLIDE_RANGE = 44
 
-type Role = 'stick' | 'throttle' | 'fire' | 'boost' | 'lock' | 'flare' | 'bomb' | 'switchWeapon' | 'engineCut' | 'climb' | 'slide'
+type Role = 'stick' | 'throttle' | 'fire' | 'boost' | 'lock' | 'flare' | 'bomb' | 'switchWeapon' | 'engineCut' | 'deployDrones' | 'climb' | 'slide'
 
 interface Assignment {
   role: Role
@@ -76,6 +76,7 @@ export function TouchControls() {
         if (
           named === 'fire' || named === 'boost' || named === 'lock' || named === 'flare' ||
           named === 'bomb' || named === 'switchWeapon' || named === 'engineCut' ||
+          named === 'deployDrones' ||
           named === 'throttle' || named === 'climb' || named === 'slide'
         ) {
           return named
@@ -186,6 +187,10 @@ export function TouchControls() {
           touchState.engineCut = true
           latchPress('engineCut')
           break
+        case 'deployDrones':
+          touchState.deployDrones = true
+          latchPress('deployDrones')
+          break
         case 'climb':
           touchState.climb = event.clientY < window.innerHeight / 2 ? 1 : -1
           break
@@ -243,6 +248,9 @@ export function TouchControls() {
           break
         case 'engineCut':
           touchState.engineCut = false
+          break
+        case 'deployDrones':
+          touchState.deployDrones = false
           break
         case 'climb':
           touchState.climb = 0
@@ -319,6 +327,7 @@ export function TouchControls() {
         <button type="button" className={`${styles.actionButton} ${styles.actionFire}`} data-touch-role="fire" aria-label="Fire">◉</button>
         <button type="button" className={styles.actionButton} data-touch-role="boost" aria-label="Boost">⚡</button>
         <button type="button" className={styles.actionButton} data-touch-role="flare" aria-label="Flares">◈</button>
+        <button type="button" className={styles.actionButton} data-touch-role="deployDrones" aria-label="Launch escort drones">🛰</button>
       </div>
 
       <button

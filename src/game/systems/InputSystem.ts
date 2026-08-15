@@ -52,6 +52,7 @@ export function stepInput(world: World): void {
     input.switchWeapon = false
     input.engineCutToggle = false
     input.boosting = false
+    input.deployDrones = false
   }
 
   deriveEdges(world)
@@ -77,11 +78,13 @@ function deriveEdges(world: World): void {
   input.engineCutPressed = input.engineCutToggle && !previous.engineCut
   input.bombPressed = input.bombing && !previous.bombing
   input.flarePressed = input.flaring && !previous.flaring
+  input.deployDronesPressed = input.deployDrones && !previous.deployDrones
 
   previous.switchWeapon = input.switchWeapon
   previous.engineCut = input.engineCutToggle
   previous.bombing = input.bombing
   previous.flaring = input.flaring
+  previous.deployDrones = input.deployDrones
 }
 
 /** Zeroes every intent. Called on pause and on losing pointer lock. */
@@ -99,11 +102,13 @@ export function clearInput(world: World): void {
   input.switchWeapon = false
   input.engineCutToggle = false
   input.boosting = false
+  input.deployDrones = false
   input.requestLockTarget = -1
   input.switchWeaponPressed = false
   input.engineCutPressed = false
   input.bombPressed = false
   input.flarePressed = false
+  input.deployDronesPressed = false
 
   // The edge detector's memory goes with it. The platform layer drops every
   // held key at the same moment (`releaseAllInput`), so after a pause the next
@@ -113,4 +118,5 @@ export function clearInput(world: World): void {
   world.prevInput.engineCut = false
   world.prevInput.bombing = false
   world.prevInput.flaring = false
+  world.prevInput.deployDrones = false
 }

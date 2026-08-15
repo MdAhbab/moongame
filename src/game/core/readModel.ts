@@ -83,6 +83,12 @@ export interface HudFrame {
   controlIntegrity: number
   /** Escort drones currently flying. */
   drones: number
+  /** Seconds left in the sortie, 0 when the bay is stowed. */
+  droneRemaining: number
+  /** Seconds until the bay can launch again, 0 when it is ready. */
+  droneCooldown: number
+  /** Size of the *next* sortie, 1..MAX_DRONES. */
+  droneTier: number
   /** Helios lance charge in [0, 1]; 0 without the perk. */
   lanceCharge: number
   /** True while an Interceptor is winding up or committed to a run on you. */
@@ -126,6 +132,9 @@ export function createHudFrame(): HudFrame {
     weaponIntegrity: 1,
     controlIntegrity: 1,
     drones: 0,
+    droneRemaining: 0,
+    droneCooldown: 0,
+    droneTier: 1,
     lanceCharge: 0,
     underAttackRun: false,
   }

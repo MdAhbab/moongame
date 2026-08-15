@@ -42,7 +42,7 @@ export type Action =
   | 'steer' | 'brake' | 'turnLeft' | 'turnRight'
   | 'strafeLeft' | 'strafeRight'
   | 'ascend' | 'descend' | 'fire' | 'lock' | 'flare' | 'bomb' | 'switchWeapon' | 'engineCut'
-  | 'boost' | 'map' | 'pause' | 'recentre'
+  | 'boost' | 'deployDrones' | 'map' | 'pause' | 'recentre'
 
 export type Binding = string
 
@@ -263,6 +263,7 @@ export function defaultKeybinds(): Record<Action, BindingList> {
     bomb: ['KeyV', 'KeyB'],
     switchWeapon: ['KeyQ', 'Tab'],
     engineCut: ['KeyC'],
+    deployDrones: ['KeyH'],
     map: ['KeyM'],
     pause: ['Escape', 'KeyP'],
     recentre: ['KeyR'],

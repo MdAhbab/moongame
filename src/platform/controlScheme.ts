@@ -154,6 +154,15 @@ export const CONTROL_ROWS: readonly ControlRow[] = [
     touch: 'the ◈ flare button',
   },
   {
+    id: 'deployDrones',
+    group: 'combat',
+    label: 'Launch escort drones',
+    actions: ['deployDrones'],
+    note: 'They fly your wing for 20 s and shoot on their own. Bring them home alive and the next launch is bigger — lose one and you start again at a single drone.',
+    touch: 'the 🛰 drone button',
+    essential: true,
+  },
+  {
     id: 'map',
     group: 'system',
     label: 'Orbital map',

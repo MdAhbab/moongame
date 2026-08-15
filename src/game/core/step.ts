@@ -11,7 +11,7 @@
  * from §18.2. That is what makes the simulation identical at 60, 120 and 144 Hz
  * (§37.3) and what makes it runnable headless in a test (§37.2).
  */
-import { GameEvent, survivingOutposts, type World } from './World.ts'
+import { GameEvent, createDroneBay, survivingOutposts, type World } from './World.ts'
 import { stepInput } from '../systems/InputSystem.ts'
 import { stepFlight } from '../systems/FlightSystem.ts'
 import { stepAI } from '../systems/AISystem.ts'
@@ -107,6 +107,13 @@ export function stepWorld(world: World, dt: number): void {
   emitOutpostLossEffects(world)
 
   if (!world.craft.alive) {
+    // The escort goes down with the craft, *here* rather than when the respawn
+    // completes. Nothing steps `stepWeapons` during `Respawning`, so drones
+    // left in the pool would hang motionless in the sky for the full four
+    // seconds and then blink out — the same artefact the bomb comment above
+    // describes, for the same reason.
+    world.drones.pool.reset()
+    world.droneBay = createDroneBay()
     world.phase = { kind: 'Respawning', remaining: RESPAWN_TIME }
   } else if (world.wave.cleared) {
     settleWave(world)
@@ -196,25 +203,39 @@ function stepRespawn(world: World, dt: number): void {
 }
 
 /**
- * Strips every perk and grants one legendary back.
+ * Strips every perk and offers three legendaries to replace them.
  *
- * The replacement is drawn from `world.rng` rather than `Math.random`, so a
- * seeded run reproduces exactly — including what it handed you after you died,
- * which is part of the run and therefore part of the replay (§10.4).
+ * It used to hand back one legendary at random, which made the single most
+ * consequential moment in a run — losing everything you had built — a moment
+ * the player watched rather than played. Three cards turns the low point into
+ * a decision, and a decision is something you can be proud of surviving.
  *
- * Escort drones go with the perks that made them: the pool is released here, and
- * `WeaponSystem` rebuilds it from whatever the new loadout is worth.
+ * The *offer* is drawn from `world.rng` rather than `Math.random`, so a seeded
+ * run reproduces the same three cards. The *pick* is made in React and pushed
+ * into `activePerks`, exactly as the post-wave draft has always worked.
+ *
+ * The escort formation goes with the perks: any sortie in the air is wiped and
+ * the bay's ladder resets, because dying is precisely the case the ladder is
+ * supposed to punish.
  */
 function resetPerksOnDeath(world: World): void {
   world.activePerks.length = 0
   world.drones.pool.reset()
+  world.droneBay = createDroneBay()
 
   const legendaries = PERKS.filter((perk) => perk.rarity === 'legendary')
-  const chosen = legendaries[Math.floor(world.rng.range(0, legendaries.length))]
-  if (chosen !== undefined) {
-    world.activePerks.push(chosen.id)
-    world.events.emit(GameEvent.PerkSelected, 1, 0, 0, 0, 0)
+  const pool = legendaries.map((perk) => perk.id)
+  const offer: string[] = []
+
+  // Draw without replacement, so the player is never offered the same card
+  // twice out of three.
+  while (offer.length < 3 && pool.length > 0) {
+    const index = Math.floor(world.rng.range(0, pool.length))
+    const [picked] = pool.splice(index, 1)
+    if (picked !== undefined) offer.push(picked)
   }
+
+  world.legendaryOffer = offer
 }
 
 function nearestSurvivingOutpost(world: Readonly<World>): World['outposts'][number] | null {

@@ -250,12 +250,21 @@ export function writeHud(frame: HudFrame, markers: ThreatMarker[]) {
   writeSystem(hudRefs.systemWeapon, frame.weaponIntegrity)
   writeSystem(hudRefs.systemControl, frame.controlIntegrity)
 
+  // The bay is always on screen once the run is under way: an ability the
+  // player cannot see the state of is one they forget they have, which is
+  // exactly what happened when drones were a perk. Three states, one pip —
+  // flying (with its clock), recharging (with its clock), or ready.
   if (hudRefs.droneCount) {
+    hudRefs.droneCount.style.display = 'inline-block'
     if (frame.drones > 0) {
-      hudRefs.droneCount.style.display = 'inline-block'
-      hudRefs.droneCount.textContent = `🛰 ${frame.drones}`
+      hudRefs.droneCount.textContent = `🛰 ${frame.drones} · ${frame.droneRemaining.toFixed(0)}s`
+      hudRefs.droneCount.style.color = 'var(--friendly)'
+    } else if (frame.droneCooldown > 0) {
+      hudRefs.droneCount.textContent = `🛰 ${frame.droneCooldown.toFixed(0)}s`
+      hudRefs.droneCount.style.color = 'var(--text-secondary)'
     } else {
-      hudRefs.droneCount.style.display = 'none'
+      hudRefs.droneCount.textContent = `🛰 ×${frame.droneTier} READY`
+      hudRefs.droneCount.style.color = 'var(--caution)'
     }
   }
 

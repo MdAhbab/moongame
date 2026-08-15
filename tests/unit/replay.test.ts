@@ -155,6 +155,7 @@ describe('a replay reproduces the run', () => {
       bombing: false, switchWeapon: false, engineCutToggle: false,
       requestLockTarget: -1,
       switchWeaponPressed: false, engineCutPressed: false, bombPressed: false, flarePressed: false,
+      deployDrones: false, deployDronesPressed: false,
     }
     recorder.record(input)
     // Every axis must now be exactly representable in the log's precision.
@@ -175,6 +176,7 @@ describe('the log is small enough to send', () => {
       bombing: false, switchWeapon: false, engineCutToggle: false,
       requestLockTarget: -1,
       switchWeaponPressed: false, engineCutPressed: false, bombPressed: false, flarePressed: false,
+      deployDrones: false, deployDronesPressed: false,
     }
     for (let i = 0; i < 600; i++) recorder.record({ ...held })
 
@@ -319,6 +321,7 @@ describe('a replay that runs out coasts rather than repeating', () => {
       bombing: false, switchWeapon: false, engineCutToggle: false,
       requestLockTarget: 4,
       switchWeaponPressed: false, engineCutPressed: false, bombPressed: false, flarePressed: false,
+      deployDrones: false, deployDronesPressed: false,
     }
     for (let i = 0; i < replay.steps + 10; i++) player.apply(input)
 

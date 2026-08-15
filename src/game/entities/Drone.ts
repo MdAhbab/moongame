@@ -1,18 +1,30 @@
 /**
- * Escort drones — the stacking buff (§7.4, §10).
+ * Escort drones — the called ability (§7.4, §10).
  *
- * One drone per pick of `escort_drone`, up to `MAX_DRONES`. They fly a formation
- * slot around the craft and shoot whatever is nearest, which makes the perk a
- * *presence* rather than a number: you can see how many you have, watch them
- * work, and lose them when you die.
+ * ## Why they are summoned rather than drafted
+ *
+ * They used to be one stacking perk among eighteen, offered three at a time
+ * after a wave. The arithmetic of that is unkind: a player could finish an
+ * entire run without ever being shown the card, and most did — the formation
+ * flight, the target selection and the lead calculation below were all content
+ * nobody met. An ability on a key is met the first time the key is pressed.
+ *
+ * ## The ladder
+ *
+ * A sortie puts `bay.tier` drones up for a time that grows with the tier.
+ * Bring them home and the tier goes up; lose even one and it resets to a single
+ * drone. That is the entire design: the escort is not a resource you spend, it
+ * is one you *protect*, and the decision it asks — press the advantage now, or
+ * fly conservatively to bank a bigger formation — is a decision the game did
+ * not previously have anywhere.
  *
  * ## Why they are not flown
  *
  * A drone with its own flight model would need its own steering, its own
  * collision response and its own failure modes, and none of that is what the
- * perk is for. Each drone's anchor orbits the craft; the drone springs toward
- * its anchor. That is legible in a dogfight — they visibly *keep formation* —
- * and it costs a spring per drone instead of a physics body.
+ * ability is for. Each drone's anchor orbits the craft; the drone springs
+ * toward its anchor. That is legible in a dogfight — they visibly *keep
+ * formation* — and it costs a spring per drone instead of a physics body.
  *
  * ## Why they use the player's projectile pool
  *
@@ -25,9 +37,14 @@
 import { GameEvent, type World } from '../core/World.ts'
 import { type Vec3, addScaled, copy, create, cross, length, normalize, scale, sub } from '../math/vec3.ts'
 import { spawnProjectile } from './Projectile.ts'
+import { MAX_DRONES } from '../core/World.ts'
 import {
   BULLET_LIFE,
   DRONE_DAMAGE,
+  DRONE_HULL,
+  DRONE_SORTIE_BASE_DURATION,
+  DRONE_SORTIE_COOLDOWN,
+  DRONE_SORTIE_DURATION_STEP,
   DRONE_FIRE_INTERVAL,
   DRONE_FOLLOW_OMEGA,
   DRONE_ORBIT_RADIUS,
@@ -42,41 +59,139 @@ const velocity: Vec3 = create()
 const toTarget: Vec3 = create()
 const side: Vec3 = create()
 
-/** How many escort drones the current perk loadout is worth. */
-export function droneCount(world: Readonly<World>): number {
-  let n = 0
-  for (const perk of world.activePerks) if (perk === 'escort_drone') n++
-  return Math.min(n, world.drones.pool.capacity)
+/** How long a sortie at `tier` stays up, seconds. */
+export function sortieDuration(tier: number): number {
+  return DRONE_SORTIE_BASE_DURATION + (tier - 1) * DRONE_SORTIE_DURATION_STEP
+}
+
+/** True when the key would actually launch something. */
+function canLaunchDrones(world: Readonly<World>): boolean {
+  const bay = world.droneBay
+  return world.craft.alive && bay.deployed === 0 && bay.cooldown <= 0
 }
 
 /**
- * Brings the live drone population in line with the perks held.
+ * Runs the bay: launch on the key, count the sortie down, land or bury it.
  *
- * Called every step rather than on the perk pick, so it is correct after a
- * respawn wipe, a replay, or any other path that rewrites `activePerks` without
- * going through the draft screen.
+ * Ordered launch-then-expire so a sortie always gets the step it was launched
+ * on. The reverse order costs the player a frame of a 20-second ability every
+ * time, which is the sort of thing that never shows up in a test and always
+ * shows up in the feel.
  * @hot-path
  */
-export function syncDrones(world: World): void {
-  const drones = world.drones
-  const wanted = droneCount(world)
+export function stepDroneBay(world: World, dt: number): void {
+  const bay = world.droneBay
 
-  while (drones.pool.count > wanted) {
-    const slot = drones.pool.dense[drones.pool.count - 1] as number
-    drones.pool.release(slot)
+  if (bay.cooldown > 0) bay.cooldown = Math.max(0, bay.cooldown - dt)
+
+  if (world.input.deployDronesPressed && canLaunchDrones(world)) {
+    launchSortie(world)
   }
 
-  while (drones.pool.count < wanted) {
+  if (bay.deployed === 0) return
+
+  bay.remaining -= dt
+
+  // Wiped out counts as ended, and ends it *now*: leaving the clock running on
+  // an empty formation would let a player who lost everything at second one
+  // stand in a 20-second cooldown they cannot see the reason for.
+  if (world.drones.pool.count === 0) {
+    endSortie(world)
+    return
+  }
+
+  if (bay.remaining <= 0) endSortie(world)
+}
+
+/** Puts `tier` drones up and starts the clock. */
+function launchSortie(world: World): void {
+  const bay = world.droneBay
+  const drones = world.drones
+
+  const wanted = Math.min(bay.tier, drones.pool.capacity)
+  let launched = 0
+
+  for (let i = 0; i < wanted; i++) {
     const slot = drones.pool.alloc()
     if (slot < 0) break
+    launched++
     // Evenly spaced around the craft, so two drones never sit on top of each
     // other and the formation reads as a formation.
-    drones.angle[slot] = (drones.pool.count - 1) * ((Math.PI * 2) / drones.pool.capacity)
+    drones.angle[slot] = i * ((Math.PI * 2) / wanted)
     drones.fireCooldown[slot] = DRONE_FIRE_INTERVAL
     drones.target[slot] = -1
+    drones.health[slot] = DRONE_HULL
     droneAnchor(world, drones.angle[slot], anchor)
     drones.body.spawnAt(slot, anchor.x, anchor.y, anchor.z)
   }
+
+  // Count what actually went up, not what was asked for. A launch that
+  // allocated nothing must not open a sortie at all — the next step would see
+  // an empty pool, read it as "flew and expired", and hand out a free tier for
+  // a sortie that never happened.
+  if (launched === 0) return
+
+  bay.deployed = launched
+  bay.remaining = sortieDuration(bay.tier)
+  bay.sortieLost = false
+
+  world.events.emit(
+    GameEvent.DronesLaunched,
+    bay.deployed,
+    bay.remaining,
+    world.craft.position.x,
+    world.craft.position.y,
+    world.craft.position.z,
+  )
+}
+
+/**
+ * Ends the sortie and settles the ladder.
+ *
+ * The tier moves *here* rather than at the moment of a kill, because a sortie
+ * is only lost once it is over — a drone shot down with fifteen seconds left
+ * still has fifteen seconds of the others' fire ahead of it, and the player
+ * should not watch the counter drop while they are still flying it.
+ */
+function endSortie(world: World): void {
+  const bay = world.droneBay
+
+  bay.tier = bay.sortieLost ? 1 : Math.min(MAX_DRONES, bay.tier + 1)
+  bay.deployed = 0
+  bay.remaining = 0
+  bay.cooldown = DRONE_SORTIE_COOLDOWN
+
+  world.drones.pool.reset()
+
+  world.events.emit(
+    GameEvent.DronesRecalled,
+    bay.tier,
+    bay.sortieLost ? 1 : 0,
+    world.craft.position.x,
+    world.craft.position.y,
+    world.craft.position.z,
+  )
+  bay.sortieLost = false
+}
+
+/**
+ * Takes `amount` off a drone and releases it if that finishes it.
+ *
+ * Marks the sortie lost on the way out, which is the flag `endSortie` reads to
+ * decide whether the ladder advances or resets.
+ */
+export function damageDrone(world: World, slot: number, amount: number): void {
+  const drones = world.drones
+  if (drones.pool.active[slot] !== 1) return
+
+  const health = (drones.health[slot] as number) - amount
+  drones.health[slot] = health
+  if (health > 0) return
+
+  world.droneBay.sortieLost = true
+  drones.body.readPosition(slot, position)
+  world.events.emit(GameEvent.DroneDestroyed, slot, 0, position.x, position.y, position.z)
+  drones.pool.release(slot)
 }
 
 /**
@@ -98,7 +213,7 @@ function droneAnchor(world: Readonly<World>, angle: number, out: Vec3): void {
 
 /** @hot-path */
 export function stepDrones(world: World, dt: number): void {
-  syncDrones(world)
+  stepDroneBay(world, dt)
 
   const drones = world.drones
   if (drones.pool.count === 0) return

@@ -17,8 +17,7 @@
 import { StrictMode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { Simulation, makeRunSeed } from '../game/core/Simulation.ts'
-import { GameEvent, MAX_DRONES } from '../game/core/World.ts'
-import { PERKS_BY_ID } from '../game/data/perks.ts'
+import { GameEvent } from '../game/core/World.ts'
 import { hashString } from '../game/core/Random.ts'
 import { bindDeviceInput, releasePointer } from '../platform/deviceInput.ts'
 import { HapticsDirector } from '../platform/haptics.ts'
@@ -45,6 +44,7 @@ import { BriefingScreen } from './screens/BriefingScreen.tsx'
 import { PlayingScreen } from './screens/PlayingScreen.tsx'
 import { PausedScreen } from './screens/PausedScreen.tsx'
 import { WaveClearScreen } from './screens/WaveClearScreen.tsx'
+import { LegendaryChoiceScreen } from './screens/LegendaryChoiceScreen.tsx'
 import { DebriefScreen } from './screens/DebriefScreen.tsx'
 import { ResultsScreen } from './screens/ResultsScreen.tsx'
 import { CreditsScreen } from './screens/CreditsScreen.tsx'
@@ -151,18 +151,28 @@ function Router({
       return <PlayingScreen />
     case 'Paused':
       return <PausedScreen onAbort={onAbort} />
+    case 'LegendaryChoice':
+      return (
+        <LegendaryChoiceScreen
+          offer={simulation.world.legendaryOffer}
+          onResolve={(perkId) => {
+            if (perkId !== null) {
+              simulation.world.activePerks.push(perkId)
+              simulation.world.events.emit(GameEvent.PerkSelected, 1, 0)
+            }
+            simulation.world.legendaryOffer = []
+          }}
+        />
+      )
     case 'WaveClear':
       return (
         <WaveClearScreen
           activePerks={simulation.world.activePerks}
           onSelectPerk={(perkId) => {
-            // Stackable perks may be taken again — that is the whole point of
-            // the drone bay. The guard used to be a flat `includes` check, so a
-            // second pick of anything silently did nothing at all.
-            const perk = PERKS_BY_ID.get(perkId)
-            const held = simulation.world.activePerks.filter((id) => id === perkId).length
-            const cap = perk?.stackable === true ? MAX_DRONES : 1
-            if (held < cap) {
+            // Perks persist for the whole run and nothing stacks, so a card is
+            // takeable exactly once. The drone bay used to be the exception; it
+            // is an ability on a key now.
+            if (!simulation.world.activePerks.includes(perkId)) {
               simulation.world.activePerks.push(perkId)
               simulation.world.events.emit(GameEvent.PerkSelected, 0, 0)
             }
@@ -651,7 +661,12 @@ export function App(): React.JSX.Element {
         return
       }
 
-      if (phase.kind === 'WaveClear') {
+      // A pending salvage offer outranks everything: it is posted the instant
+      // the respawn completes, and the world is frozen behind it until the
+      // player answers.
+      if (simulation.world.legendaryOffer.length > 0 && screen === 'Playing') {
+        store.goto('LegendaryChoice')
+      } else if (phase.kind === 'WaveClear') {
         store.setWaveSummary(simulation.captureWaveSummary())
         store.goto('WaveClear')
       } else if (phase.kind === 'RunOver') {

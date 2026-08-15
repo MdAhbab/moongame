@@ -170,7 +170,7 @@ let fireLatched = false
  * Held controls need no such treatment. Steering and firing are *states*, and a
  * state that lasted less than 8 ms did not happen.
  */
-const pressLatch = { switchWeapon: false, engineCut: false, bomb: false, flare: false }
+const pressLatch = { switchWeapon: false, engineCut: false, bomb: false, flare: false, deployDrones: false }
 export type LatchedAction = keyof typeof pressLatch
 
 /**
@@ -223,6 +223,7 @@ export interface TouchState {
   bombing: boolean
   switchWeapon: boolean
   engineCut: boolean
+  deployDrones: boolean
 }
 
 export const touchState: TouchState = {
@@ -238,6 +239,7 @@ export const touchState: TouchState = {
   bombing: false,
   switchWeapon: false,
   engineCut: false,
+  deployDrones: false,
 }
 
 interface PadState {
@@ -354,6 +356,7 @@ export function releaseAllInput(): void {
   pressLatch.engineCut = false
   pressLatch.bomb = false
   pressLatch.flare = false
+  pressLatch.deployDrones = false
   touchState.steerX = 0
   touchState.steerY = 0
   touchState.strafe = 0
@@ -444,6 +447,7 @@ export function bindDeviceInput(simulation: Simulation): () => void {
       if (matchesAction('engineCut', code, heldModifiers)) latchPress('engineCut')
       if (matchesAction('bomb', code, heldModifiers)) latchPress('bomb')
       if (matchesAction('flare', code, heldModifiers)) latchPress('flare')
+      if (matchesAction('deployDrones', code, heldModifiers)) latchPress('deployDrones')
     }
   }
 
@@ -694,6 +698,7 @@ export function bindDeviceInput(simulation: Simulation): () => void {
     let bombing = isHeld('bomb') || pressLatch.bomb
     let switchWeapon = isHeld('switchWeapon') || pressLatch.switchWeapon
     let engineCutToggle = isHeld('engineCut') || pressLatch.engineCut
+    let deployDrones = isHeld('deployDrones') || pressLatch.deployDrones
     let boosting = isHeld('boost')
 
     // ---- mouse ----
@@ -745,6 +750,7 @@ export function bindDeviceInput(simulation: Simulation): () => void {
     bombing = bombing || touchState.bombing
     switchWeapon = switchWeapon || touchState.switchWeapon
     engineCutToggle = engineCutToggle || touchState.engineCut
+    deployDrones = deployDrones || touchState.deployDrones
 
     // ---- trackpad scroll ----
     //
@@ -768,6 +774,7 @@ export function bindDeviceInput(simulation: Simulation): () => void {
     input.bombing = bombing
     input.switchWeapon = switchWeapon
     input.engineCutToggle = engineCutToggle
+    input.deployDrones = deployDrones
     input.boosting = boosting
 
     // A tapped target is a request, not a mode. It survives only while the

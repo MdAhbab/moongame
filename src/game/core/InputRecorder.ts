@@ -61,7 +61,7 @@ export interface InputFrame {
   throttle: number
   /**
    * Bit 0 firing, 1 locking, 2 boosting, 3 flaring, 4 bombing, 5 weapon switch,
-   * 6 engine cut.
+   * 6 engine cut, 7 drone bay.
    *
    * The last three were missing, and their absence was not cosmetic: a replay
    * that dropped them reproduced a run in which the player never dropped a
@@ -179,7 +179,8 @@ export class InputRecorder {
       (input.flaring ? 8 : 0) |
       (input.bombing ? 16 : 0) |
       (input.switchWeapon ? 32 : 0) |
-      (input.engineCutToggle ? 64 : 0)
+      (input.engineCutToggle ? 64 : 0) |
+      (input.deployDrones ? 128 : 0)
     const lockTarget = Math.trunc(input.requestLockTarget)
 
     input.steerX = dequantiseAxis(steerX)
@@ -270,6 +271,7 @@ export class InputPlayer {
     input.bombing = (frame.buttons & 16) !== 0
     input.switchWeapon = (frame.buttons & 32) !== 0
     input.engineCutToggle = (frame.buttons & 64) !== 0
+    input.deployDrones = (frame.buttons & 128) !== 0
     input.requestLockTarget = frame.lockTarget
     // The press edges are *derived*, never played back: `stepInput` recomputes
     // them from the held flags above against the world's own previous step, so
@@ -301,6 +303,7 @@ function neutral(input: InputState): void {
   input.bombing = false
   input.switchWeapon = false
   input.engineCutToggle = false
+  input.deployDrones = false
   input.requestLockTarget = -1
 }
 
@@ -405,7 +408,7 @@ const FIXED_DT_LOCAL = 1 / 120
  *   varint  steps          1 byte for runs under 128, which is nearly all of them
  *   int8    steerX steerY strafe climb
  *   uint8   throttle
- *   uint8   buttons        7 bits used
+ *   uint8   buttons        all 8 bits used
  *   varint  lockTarget+1   1 byte for -1, which is nearly always
  * ```
  *
