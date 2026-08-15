@@ -1,0 +1,37 @@
+/* src/ui/hud/Horizon.module.css */
+.container {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  color: var(--text-secondary);
+  opacity: 0.6;
+  width: 400px;
+  /* Transform origin center to roll correctly */
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.tickLeft, .tickRight {
+  flex: 1;
+  border-bottom: var(--stroke) solid var(--text-secondary);
+  height: 0;
+  display: inline-block;
+}
+
+.center {
+  opacity: 0.5;
+}

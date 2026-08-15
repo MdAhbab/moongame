@@ -1,0 +1,38 @@
+/* src/ui/hud/AlertBand.module.css */
+.band {
+  position: absolute;
+  top: 15%;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.alertContent {
+  background: var(--scrim);
+  color: var(--caution);
+  font-family: var(--font-hud);
+  font-size: var(--text-lg);
+  letter-spacing: var(--tracking-label);
+  padding: 8px 24px;
+  border-top: var(--stroke-bold) solid var(--caution);
+  border-bottom: var(--stroke-bold) solid var(--caution);
+  text-transform: uppercase;
+  animation: flash 400ms infinite alternate;
+}
+
+@keyframes flash {
+  0% { color: var(--caution); border-color: var(--caution); }
+  100% { color: var(--critical); border-color: var(--critical); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .alertContent {
+    animation: none;
+    font-weight: bold;
+    color: var(--critical);
+    border-color: var(--critical);
+  }
+}

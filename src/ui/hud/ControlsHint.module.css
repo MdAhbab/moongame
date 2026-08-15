@@ -1,0 +1,89 @@
+/*
+ * Bottom-centre, above the touch controls and clear of the Threat Ring.
+ *
+ * The fade is a CSS animation and not a JS timer on purpose — see the note in
+ * ControlsHint.tsx. `pointer-events: none` matters: this sits over the canvas,
+ * and a card that swallowed the click that requests pointer lock would stop the
+ * player firing while telling them how to fire.
+ */
+.hint {
+  position: absolute;
+  left: 50%;
+  /* Clear of the Threat Ring above and the boost/lock readouts below. */
+  bottom: calc(58px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 20;
+  max-width: min(470px, 80vw);
+  padding: 12px 18px;
+  pointer-events: none;
+
+  background: color-mix(in srgb, var(--panel, #0b1220) 78%, transparent);
+  border: var(--stroke, 1px) solid var(--hairline, rgba(255, 255, 255, 0.16));
+  border-radius: 4px;
+  backdrop-filter: blur(6px);
+
+  animation: hint-in 400ms ease-out both, hint-out 900ms ease-in 18s both;
+}
+
+/* The tutorial keeps its card up: there, reading it *is* the task. */
+.persistent {
+  animation: hint-in 400ms ease-out both;
+}
+
+.objective {
+  margin: 0 0 10px;
+  font-family: var(--font-ui, system-ui), sans-serif;
+  font-size: var(--text-label, 0.78rem);
+  line-height: 1.5;
+  color: var(--text-secondary, #9fb0c8);
+}
+
+.objective strong {
+  color: var(--text-primary, #e8eef7);
+  font-weight: 600;
+}
+
+.rows {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 0;
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.verb {
+  font-family: var(--font-hud, monospace);
+  font-size: 0.64rem;
+  letter-spacing: 0.09em;
+  color: var(--text-secondary, #9fb0c8);
+  margin: 0;
+}
+
+.how {
+  font-family: var(--font-hud, monospace);
+  font-size: 0.72rem;
+  color: var(--friendly, #6fd3ff);
+  margin: 0;
+}
+
+@keyframes hint-in {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@keyframes hint-out {
+  from { opacity: 1; }
+  to { opacity: 0; visibility: hidden; }
+}
+
+/* A card that fades on its own is motion the player did not ask for. */
+@media (prefers-reduced-motion: reduce) {
+  .hint {
+    animation: none;
+  }
+}

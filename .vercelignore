@@ -1,0 +1,21 @@
+# The optional cloud backend is not deployed.
+#
+# `api/` is thirteen serverless functions — accounts, passkeys, saves and the
+# replay-verified leaderboard — and Vercel's Hobby plan allows twelve. They are
+# genuinely optional: `cloudAvailable()` probes `/api/account`, gets HTML back on
+# a static deployment, and the whole game runs locally from there. Nothing about
+# flying, scoring or progression depends on them.
+#
+# To turn them on later: move to a Pro plan (or fold the auth routes into one
+# handler to get under the limit), delete these two lines, and set the variables
+# in `.env.example`.
+api
+db
+
+# Never needed by the build.
+tests
+docs
+art-source
+tools
+run.py
+playwright.config.ts

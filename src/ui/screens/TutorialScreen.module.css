@@ -1,0 +1,97 @@
+/* src/ui/screens/TutorialScreen.module.css */
+.container {
+  position: absolute;
+  inset: 0;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* Beat card — anchored to bottom-left so it doesn't obscure the center of the action */
+.beatCard {
+  position: absolute;
+  bottom: max(var(--safe-bottom), 90px); /* above the END TUTORIAL button */
+  left: max(var(--safe-left), 24px);
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  background: rgb(var(--surface-rgb) / 0.88);
+  backdrop-filter: blur(10px);
+  border: var(--stroke) solid var(--hairline);
+  border-left: var(--stroke-bold) solid var(--friendly);
+  border-radius: var(--radius);
+  padding: 16px;
+  max-width: 400px;
+  pointer-events: none;
+  animation: slideUp var(--dur-screen) var(--ease-out) both;
+}
+
+.illustration {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  flex-shrink: 0;
+  border-radius: var(--radius);
+  background: var(--void);
+}
+
+.beatContent {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.headline {
+  font-family: var(--font-hud);
+  font-size: var(--text-body);
+  color: var(--friendly);
+  letter-spacing: var(--tracking-label);
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+/* "2/3" — so the player knows the training is finite before they commit. */
+.beatIndex {
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+  letter-spacing: 0.08em;
+}
+
+.body {
+  font-size: var(--text-body);
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.45;
+}
+
+.hint {
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  color: var(--caution);
+  letter-spacing: var(--tracking-label);
+  margin: 0;
+}
+
+.actions {
+  position: absolute;
+  bottom: max(var(--safe-bottom), 24px);
+  left: max(var(--safe-left), 24px);
+  pointer-events: auto;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(16px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .beatCard {
+    animation: none;
+  }
+}

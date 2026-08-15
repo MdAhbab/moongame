@@ -1,0 +1,85 @@
+/* src/ui/hud/Reticle.module.css — see Reticle.tsx for what each mark means. */
+
+.layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* Above the scene, below the panels: the reticle must never sit on top of a
+     gauge the player is reading. */
+  z-index: 1;
+  opacity: 0;
+  transition: opacity var(--dur-in) var(--ease-out);
+}
+
+/*
+ * Every mark is the same 112 px box, pulled back by half its size so its
+ * *centre* sits on the layer's origin. The frame callback then writes
+ * `transform: translate3d(x, y, 0) scale(s)`, and because the box is already
+ * centred and `transform-origin` is its middle, that transform is a plain
+ * screen coordinate: no half-width arithmetic at the write site, and a scaled
+ * mark grows about the point it is marking rather than drifting off it.
+ *
+ * One size for all four marks, with the glyph centred inside by flex, so this
+ * rule stays true however large or small an individual glyph is.
+ */
+.node {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 112px;
+  height: 112px;
+  margin-left: -56px;
+  margin-top: -56px;
+  transform-origin: 56px 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--friendly);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+.glyph {
+  display: block;
+  flex: none;
+  filter: drop-shadow(0 0 3px rgb(var(--void-rgb) / 0.9));
+}
+
+.lead {
+  color: var(--caution);
+}
+
+.bomb {
+  color: var(--hostile);
+}
+
+.label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  color: var(--hostile);
+  text-shadow: 0 0 4px rgb(var(--void-rgb) / 0.95);
+  /* The span is anchored at its own centre so the transform can be the marker's
+     screen position unmodified. */
+  translate: -50% -50%;
+  opacity: 0;
+  white-space: nowrap;
+  will-change: transform, opacity;
+}
+
+.bombLabel {
+  color: var(--hostile);
+}
+
+/*
+ * §35.4 — reduced motion removes the swell and the fades, not the information.
+ * The marks stay exactly where they are and keep saying exactly what they said.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .layer {
+    transition: none;
+  }
+}

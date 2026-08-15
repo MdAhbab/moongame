@@ -1,0 +1,260 @@
+/*
+ * Base styles — reset, focus, motion (gameplan §15, §35).
+ *
+ * Tokens live in `tokens.css` and are not redefined here.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--void);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+main {
+  height: 100%;
+  width: 100%;
+}
+
+/*
+ * §35.6 — a visible focus ring everywhere, with no opt-out. A keyboard-only
+ * player must always be able to see where they are; §42 requires a full
+ * keyboard-only run to be completable.
+ */
+*:focus-visible {
+  outline: var(--stroke-bold) solid var(--friendly);
+  outline-offset: 2px;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  background: transparent;
+  border: var(--stroke) solid var(--hairline);
+  border-radius: var(--radius);
+  /* §35.5, §36.2 — every interactive target clears 44px. */
+  min-height: var(--touch-target);
+  padding: 0 16px;
+}
+
+button:hover {
+  border-color: var(--friendly);
+}
+
+/*
+ * The two layers of the application.
+ *
+ * The scene is a fixed full-viewport backdrop and the UI floats over it, so the
+ * 3D world stays mounted behind every menu (§11's Render column) rather than
+ * being torn down and rebuilt on each navigation. Without an explicit height
+ * here the canvas sizes to its content and collapses to a strip.
+ */
+.scene-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+
+.scene-layer canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.ui-layer {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  /* Menus take pointer events; the HUD re-enables them per element so clicks
+     pass through to the canvas during Playing. */
+  pointer-events: none;
+}
+
+.ui-layer > * {
+  pointer-events: auto;
+}
+
+/*
+ * §15.3 — tabular figures on anything numeric, so a score or a hull value does
+ * not jitter sideways as its digits change.
+ */
+.hud,
+.readout,
+.shell__seed {
+  font-family: var(--font-hud);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+}
+
+/* --- Provisional skeleton. Removed with ProvisionalShell.tsx. --- */
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 100%;
+  padding: max(var(--hud-inset), var(--safe-top)) max(var(--hud-inset), var(--safe-right))
+    max(var(--hud-inset), var(--safe-bottom)) max(var(--hud-inset), var(--safe-left));
+}
+
+.shell__title {
+  margin: 0;
+  font-family: var(--font-hud);
+  font-size: var(--text-2xl);
+  letter-spacing: var(--tracking-display);
+  color: var(--friendly);
+}
+
+.shell__tagline {
+  margin: 4px 0 0;
+  max-width: 60ch;
+  color: var(--text-secondary);
+}
+
+.shell__seed {
+  margin: 8px 0 0;
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  color: var(--inert);
+}
+
+.shell__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.shell__tab {
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  color: var(--text-secondary);
+  min-height: var(--touch-target);
+}
+
+.shell__tab--on {
+  color: var(--void);
+  background: var(--friendly);
+  border-color: var(--friendly);
+}
+
+.shell__body {
+  flex: 1;
+  border: var(--stroke) solid var(--hairline);
+  border-radius: var(--radius);
+  padding: 20px;
+  background: rgb(var(--surface-rgb) / 0.6);
+}
+
+.shell__screen {
+  margin: 0 0 12px;
+  font-family: var(--font-hud);
+  font-size: var(--text-lg);
+  letter-spacing: var(--tracking-label);
+}
+
+.shell__foot,
+.readout__note {
+  font-size: var(--text-label);
+  color: var(--inert);
+}
+
+.readout__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.readout__metric dt {
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  color: var(--text-secondary);
+}
+
+.readout__metric dd {
+  margin: 2px 0 0;
+  font-family: var(--font-hud);
+  font-size: var(--text-xl);
+  color: var(--friendly);
+}
+
+.readout__alert {
+  min-height: 1.5em;
+  font-family: var(--font-hud);
+  letter-spacing: var(--tracking-label);
+  color: var(--caution);
+}
+
+.readout__roster {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 4px;
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+}
+
+.note__waves {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 12px;
+}
+
+.note__waves p {
+  margin: 2px 0 0;
+  color: var(--text-secondary);
+  max-width: 72ch;
+}
+
+.boundary {
+  padding: 24px;
+  border: var(--stroke) solid var(--hostile);
+  border-radius: var(--radius);
+}
+
+.boundary pre {
+  overflow-x: auto;
+  padding: 12px;
+  background: rgb(var(--void-rgb) / 0.6);
+  color: var(--caution);
+  font-size: var(--text-label);
+}
+
+/*
+ * §35.3 — reduced motion removes decoration and keeps information. Every
+ * gameplay-informative animation has a static substitute rather than simply
+ * being deleted, because reduced motion must not mean reduced information.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

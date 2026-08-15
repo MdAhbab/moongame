@@ -1,0 +1,316 @@
+/* AccountScreen.module.css — follows SettingsScreen structure */
+.container {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: var(--scrim);
+  backdrop-filter: blur(12px);
+  z-index: 100;
+  padding: max(var(--safe-top), 24px) max(var(--safe-right), 24px) max(var(--safe-bottom), 24px) max(var(--safe-left), 24px);
+  outline: none;
+}
+
+.modal {
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  background: rgb(var(--surface-raised-rgb) / 0.95);
+  border: var(--stroke) solid var(--hairline-strong);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 32px 12px;
+  border-bottom: var(--stroke) solid var(--hairline);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-hud);
+  font-size: var(--text-2xl);
+  color: var(--text-primary);
+  letter-spacing: var(--tracking-label);
+}
+
+.scrollArea {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 32px;
+}
+
+.footer {
+  padding: 16px 32px;
+  border-top: var(--stroke) solid var(--hairline);
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ── Tab content ─────────────────────────────────────────────── */
+.tabContent {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.status {
+  color: var(--text-secondary);
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-align: center;
+  padding: 32px 0;
+}
+
+.blurb {
+  color: var(--text-secondary);
+  font-size: var(--text-body);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ── Auth (unauthenticated state) ────────────────────────────── */
+.authActions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-secondary);
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: var(--stroke);
+  background: var(--hairline);
+}
+
+.magicForm {
+  display: flex;
+  gap: 8px;
+}
+
+.emailInput {
+  flex: 1;
+  background: rgb(var(--void-rgb) / 0.5);
+  border: var(--stroke) solid var(--hairline-strong);
+  border-radius: var(--radius);
+  color: var(--text-primary);
+  font-family: var(--font-hud);
+  font-size: var(--text-body);
+  padding: 10px 14px;
+  outline: none;
+  min-width: 0;
+}
+
+.emailInput:focus {
+  border-color: var(--friendly);
+}
+
+.magicSent {
+  color: var(--friendly);
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-align: center;
+  padding: 8px;
+  border: var(--stroke) solid var(--friendly);
+  border-radius: var(--radius);
+  background: rgb(var(--friendly-rgb) / 0.08);
+}
+
+/* ── Authenticated state ─────────────────────────────────────── */
+.pilotCard {
+  background: rgb(var(--void-rgb) / 0.5);
+  border: var(--stroke) solid var(--hairline);
+  border-left: var(--stroke-bold) solid var(--friendly);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pilotLabel {
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+  letter-spacing: var(--tracking-label);
+}
+
+.pilotName {
+  font-family: var(--font-hud);
+  font-size: var(--text-xl);
+  color: var(--text-primary);
+  letter-spacing: var(--tracking-label);
+}
+
+.pilotEmail {
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionLabel {
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+  letter-spacing: var(--tracking-label);
+}
+
+.nameRow {
+  display: flex;
+  gap: 8px;
+}
+
+.nameInput {
+  flex: 1;
+  background: rgb(var(--void-rgb) / 0.5);
+  border: var(--stroke) solid var(--hairline-strong);
+  border-radius: var(--radius);
+  color: var(--text-primary);
+  font-family: var(--font-hud);
+  font-size: var(--text-body);
+  padding: 10px 14px;
+  outline: none;
+  min-width: 0;
+}
+
+.nameInput:focus {
+  border-color: var(--friendly);
+}
+
+/* ── Danger Zone ─────────────────────────────────────────────── */
+.dangerZone {
+  background: rgb(var(--hostile-rgb) / 0.06);
+  border: var(--stroke) solid rgb(var(--hostile-rgb) / 0.3);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.dangerLabel {
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  color: var(--hostile);
+  letter-spacing: var(--tracking-label);
+}
+
+.dangerActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ── Cloud Save tab ──────────────────────────────────────────── */
+.saveInfo {
+  background: rgb(var(--void-rgb) / 0.5);
+  border: var(--stroke) solid var(--hairline);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.saveRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.saveKey {
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+  letter-spacing: var(--tracking-label);
+}
+
+.saveValue {
+  font-family: var(--font-hud);
+  font-size: var(--text-body);
+  color: var(--text-primary);
+}
+
+.errorNote {
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  color: var(--hostile);
+  letter-spacing: var(--tracking-label);
+  text-align: center;
+}
+
+/* ── Conflict resolution ─────────────────────────────────────── */
+.conflictPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.conflictTitle {
+  font-family: var(--font-hud);
+  font-size: var(--text-xl);
+  color: var(--caution);
+  letter-spacing: var(--tracking-display);
+  margin: 0;
+}
+
+.conflictBlurb {
+  color: var(--text-secondary);
+  font-size: var(--text-body);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.conflictActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.conflictOption {
+  background: rgb(var(--void-rgb) / 0.5);
+  border: var(--stroke) solid var(--hairline);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.conflictOptionLabel {
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+  letter-spacing: var(--tracking-label);
+}
+
+.conflictStat {
+  font-family: var(--font-hud);
+  font-size: var(--text-body);
+  color: var(--text-primary);
+}

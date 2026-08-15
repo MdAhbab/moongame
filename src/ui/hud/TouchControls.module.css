@@ -1,0 +1,236 @@
+/* src/ui/hud/TouchControls.module.css — §8.3 */
+
+.container {
+  position: absolute;
+  inset: 0;
+  z-index: 50; /* Above the HUD, below modals. */
+  /* Critical: without this the browser scrolls, zooms and long-press-selects
+     underneath the controls, so a hard turn becomes a page pan. */
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  transition: opacity 300ms var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .container {
+    transition: none;
+  }
+}
+
+/* ── Left thumb: floating stick ─────────────────────────────────── */
+
+.stickBase {
+  position: absolute;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  border: var(--stroke-bold) solid var(--hairline-strong);
+  background: var(--scrim);
+  /* The base is a visual only — the pointer that opened it is captured, and
+     letting this element take hits would steal moves from that capture. */
+  pointer-events: none;
+}
+
+.stickKnob {
+  position: absolute;
+  top: 21px;
+  left: 21px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: rgb(var(--friendly-rgb) / 0.28);
+  border: var(--stroke) solid var(--friendly);
+  will-change: transform;
+}
+
+/* ── Right thumb: throttle and altitude trim ────────────────────── */
+
+.throttleZone {
+  position: absolute;
+  right: max(var(--safe-right), 18px);
+  bottom: max(var(--safe-bottom), 150px);
+  width: 92px;
+  height: 210px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* This one *does* take hits: the whole column is the control. */
+  touch-action: none;
+}
+
+.throttleBase {
+  width: 54px;
+  height: 190px;
+  border-radius: 27px;
+  border: var(--stroke-bold) solid var(--hairline-strong);
+  background: var(--scrim);
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.throttleKnob {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: rgb(var(--friendly-rgb) / 0.28);
+  border: var(--stroke) solid var(--friendly);
+  will-change: transform;
+  pointer-events: none;
+}
+
+.throttleLabel {
+  position: absolute;
+  bottom: 8px;
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+/* ── Action buttons ─────────────────────────────────────────────── */
+
+.actionCluster {
+  position: absolute;
+  right: max(var(--safe-right), 122px);
+  bottom: max(var(--safe-bottom), 34px);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.leftActionCluster {
+  position: absolute;
+  left: max(var(--safe-left), 75px);
+  bottom: max(var(--safe-bottom), 34px);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.actionButton {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  border: var(--stroke-bold) solid var(--hairline-strong);
+  background: var(--scrim);
+  color: var(--text-primary);
+  font-size: 22px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  touch-action: none;
+  /* No :active transition — the visual has to land on the same frame as the
+     shot, or the control feels laggy however fast the simulation is. */
+}
+
+.actionButton:active {
+  background: rgb(var(--friendly-rgb) / 0.22);
+  border-color: var(--friendly);
+}
+
+.actionFire {
+  width: 78px;
+  height: 78px;
+  font-size: 28px;
+  border-color: var(--friendly);
+  color: var(--friendly);
+}
+
+.pauseButton {
+  position: absolute;
+  top: max(var(--safe-top), 12px);
+  right: max(var(--safe-right), 12px);
+  width: 46px;
+  height: 46px;
+  border-radius: var(--radius);
+  border: var(--stroke) solid var(--hairline-strong);
+  background: var(--scrim);
+  color: var(--text-secondary);
+  font-size: 14px;
+  display: grid;
+  place-items: center;
+}
+
+/*
+ * A phone in portrait has no room for a 210px throttle column beside a stick,
+ * and the cluster would sit on top of the HUD. Shrink rather than hide: a
+ * control the player cannot reach is worse than a small one.
+ */
+@media (max-width: 520px) {
+  .throttleZone {
+    height: 160px;
+    bottom: max(var(--safe-bottom), 130px);
+  }
+
+  .throttleBase {
+    height: 148px;
+  }
+
+  .actionCluster {
+    right: max(var(--safe-right), 108px);
+    gap: 9px;
+  }
+
+  .actionButton {
+    width: 54px;
+    height: 54px;
+  }
+
+  .actionFire {
+    width: 66px;
+    height: 66px;
+  }
+}
+
+/*
+ * The slide rocker — horizontal only, springs back to centre.
+ *
+ * Sits on the left edge, above the floating stick's usual landing zone, so a
+ * thumb can reach it without leaving the steering hand's territory. Narrow on
+ * purpose: it is a two-state control with a proportional middle, not a stick.
+ */
+.slideZone {
+  position: absolute;
+  left: 0;
+  bottom: calc(34% + env(safe-area-inset-bottom, 0px));
+  width: 132px;
+  height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+}
+
+.slideTrack {
+  position: relative;
+  width: 108px;
+  height: 42px;
+  border: var(--stroke) solid var(--hairline-strong);
+  border-radius: 21px;
+  background: rgb(var(--surface-raised-rgb, 12 18 28) / 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.slideKnob {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgb(var(--friendly-rgb) / 0.28);
+  border: var(--stroke) solid var(--friendly);
+  transition: transform 90ms var(--ease-out);
+}
+
+.slideLabel {
+  font-family: var(--font-hud);
+  font-size: 0.56rem;
+  letter-spacing: 0.12em;
+  color: var(--text-secondary);
+  pointer-events: none;
+}

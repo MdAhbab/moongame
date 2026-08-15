@@ -1,0 +1,113 @@
+/*
+ * Design tokens — gameplan §15.2, §15.3, §15.5.
+ *
+ * "Instrument-lit vacuum": hard light, black shadows, no atmospheric softening.
+ * The world is austere and mostly monochrome; everything the player must act on
+ * glows.
+ *
+ * Amber vs cyan, never red vs green. Red/green is the worst case for
+ * deuteranopia (~6% of males) and it is exactly what V1 used. Amber and cyan
+ * differ in both luminance and blue-yellow opponency, so they survive
+ * protanopia, deuteranopia and tritanopia alike (§35.1).
+ */
+
+:root {
+  /* --- §15.2 palette. These nine are normative. --- */
+  --void: #05060a;
+  --regolith: #b8b4ad;
+  --regolith-shadow: #0a0c10;
+  --earthshine: #2a3f5f;
+  --friendly: #7fe8ff;
+  --hostile: #ff8a3d;
+  --critical: #ffffff;
+  --caution: #ffc857;
+  --inert: #4a5058;
+
+  /*
+   * Interface greys. §15.2 defines gameplay colour; a UI additionally needs a
+   * panel surface and two text weights. These are derived from the normative
+   * palette rather than invented: `surface` sits between --void and
+   * --regolith-shadow, and the text pair is a luminance ramp toward --critical.
+   */
+  --surface: #0d1117;
+  --surface-raised: #151b24;
+  --text-primary: #e8edf2;
+  --text-secondary: #8b97a6;
+
+  /*
+   * RGB triples for the same colours. CSS custom properties cannot carry an
+   * alpha channel, and every translucent stroke and scrim in the HUD needs one,
+   * so these exist to keep `rgb(var(--x-rgb) / 0.2)` truthful to the token
+   * rather than re-typing hex literals at 40 call sites.
+   */
+  --void-rgb: 5 6 10;
+  --friendly-rgb: 127 232 255;
+  --hostile-rgb: 255 138 61;
+  --critical-rgb: 255 255 255;
+  --caution-rgb: 255 200 87;
+  --inert-rgb: 74 80 88;
+  --regolith-rgb: 184 180 173;
+  --surface-rgb: 13 17 23;
+  --text-secondary-rgb: 139 151 166;
+
+  /* --- §15.3 typography --- */
+  --font-hud: 'Chakra Petch', ui-monospace, 'SF Mono', 'Cascadia Mono', monospace;
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /*
+   * Type scale, 1.25 ratio. §15.3/§35.7: 16px minimum body, 14px absolute floor
+   * for incidental labels. There is no 12px step by design — the UI Builder
+   * output used 12px HUD labels in 46 places, which is below the floor, and
+   * V1's 11px grey-on-black instructions are exactly the failure being avoided.
+   */
+  --text-label: 14px;
+  --text-body: 16px;
+  --text-lg: 20px;
+  --text-xl: 25px;
+  --text-2xl: 31px;
+  --text-3xl: 39px;
+  --text-display: 49px;
+
+  --tracking-label: 0.12em;
+  --tracking-display: 0.04em;
+
+  /* --- §15.4 form language: thin strokes, sharp corners --- */
+  --stroke: 1px;
+  --stroke-bold: 2px;
+  --radius: 2px;
+  --hairline: rgb(var(--text-secondary-rgb) / 0.22);
+  --hairline-strong: rgb(var(--text-secondary-rgb) / 0.4);
+  --scrim: rgb(var(--void-rgb) / 0.72);
+
+  /* --- §15.5 motion: fast in, slower out --- */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --dur-in: 180ms;
+  --dur-out: 240ms;
+  --dur-screen: 320ms;
+
+  /* --- Layout --- */
+  --hud-scale: 1;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  /* §14.2 — all HUD elements sit within a 90% safe area. */
+  --hud-inset: 4%;
+  /* §35.5, §36.2 — every touch target is at least this tall. */
+  --touch-target: 44px;
+
+  color-scheme: dark;
+}
+
+/*
+ * High-contrast mode (§35.1): heavier strokes and explicit outlines. It changes
+ * weight, not hue, so the amber/cyan allegiance coding is untouched.
+ */
+:root[data-contrast='high'] {
+  --stroke: 2px;
+  --stroke-bold: 3px;
+  --hairline: rgb(var(--text-secondary-rgb) / 0.55);
+  --hairline-strong: rgb(var(--text-secondary-rgb) / 0.8);
+  --text-secondary: #b9c4d0;
+  --scrim: rgb(var(--void-rgb) / 0.88);
+}

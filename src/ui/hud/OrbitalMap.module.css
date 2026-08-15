@@ -1,0 +1,67 @@
+/* src/ui/hud/OrbitalMap.module.css — §12.4 */
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  /* Fast enough that a glance costs nothing, slow enough not to snap. The map
+     is consulted mid-flight while a drain clock runs; a long fade would be a
+     tax on using it. */
+  transition: opacity 120ms ease-out;
+  background: color-mix(in srgb, var(--bg, #05060a) 62%, transparent);
+  pointer-events: none;
+  /* Above the HUD grid. The map replaces the instruments while it is up rather
+     than sharing the screen with them. */
+  z-index: 20;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay {
+    transition: none;
+  }
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  border: var(--stroke) solid var(--hairline);
+  border-radius: var(--radius);
+  /* Fully opaque, not the usual translucent scrim. The Threat Ring sits dead
+     centre and showed straight through a semi-transparent panel, so the map —
+     whose whole job is an uncluttered read of where everything is — was
+     overlaid with a second, differently-scaled plot of the same enemies. */
+  background: var(--bg, #05060a);
+}
+
+.header {
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  color: var(--text-secondary);
+}
+
+.chart {
+  /* Square, and bounded by the shorter viewport axis so it never overflows on a
+     phone in landscape. */
+  width: min(62vh, 62vw);
+  height: min(62vh, 62vw);
+}
+
+.ringLabel {
+  font-family: var(--font-hud);
+  font-size: 3px;
+  letter-spacing: 0.04em;
+  dominant-baseline: middle;
+}
+
+.footer {
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+  opacity: 0.72;
+}

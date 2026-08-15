@@ -1,0 +1,136 @@
+/* src/ui/screens/DebriefScreen.module.css */
+.container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: rgb(var(--surface-rgb) / 0.8);
+  backdrop-filter: blur(8px);
+  padding: max(var(--safe-top), 24px) max(var(--safe-right), 24px) max(var(--safe-bottom), 24px) max(var(--safe-left), 24px);
+}
+
+.content {
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.title {
+  font-family: var(--font-hud);
+  font-size: var(--text-2xl);
+  color: var(--text-primary);
+  letter-spacing: var(--tracking-display);
+  margin: 0;
+}
+
+.cause {
+  font-size: var(--text-lg);
+  color: var(--caution);
+  border-left: var(--stroke-bold) solid var(--caution);
+  padding-left: 16px;
+  margin: 0;
+}
+
+.successText {
+  font-size: var(--text-lg);
+  color: var(--friendly);
+  border-left: var(--stroke-bold) solid var(--friendly);
+  padding-left: 16px;
+  margin: 0;
+}
+
+.timelineContainer {
+  background: rgb(var(--void-rgb) / 0.6);
+  border: var(--stroke) solid var(--hairline-strong);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.timelineHeader {
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+  letter-spacing: var(--tracking-label);
+  margin-bottom: 8px;
+}
+
+.timelineRow {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  align-items: center;
+  gap: 16px;
+}
+
+.timelineName {
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  color: var(--text-primary);
+}
+
+.timelineNameLost {
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  color: var(--inert);
+  text-decoration: line-through;
+}
+
+.timelineTrack {
+  position: relative;
+  height: 24px;
+  background: rgb(var(--surface-raised-rgb) / 0.5);
+  border-radius: var(--radius);
+}
+
+.threatSpan {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  background: rgb(var(--caution-rgb) / 0.3);
+  border: var(--stroke) solid var(--caution);
+  border-radius: var(--radius);
+}
+
+.lostMarker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--critical);
+  z-index: 2;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.statItem span {
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+  letter-spacing: var(--tracking-label);
+}
+
+.statItem strong {
+  font-family: var(--font-hud);
+  font-size: var(--text-xl);
+  color: var(--friendly);
+  font-weight: normal;
+}
+
+.actions {
+  margin-top: 16px;
+}

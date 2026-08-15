@@ -1,0 +1,52 @@
+/* src/ui/hud/ThreatRing.module.css */
+.ring {
+  overflow: visible;
+  /* §36.2: grows relative to screen on mobile */
+  width: min(300px, 90vw);
+  height: min(300px, 90vw);
+  pointer-events: none;
+}
+
+.markerGroup {
+  transform-origin: 50% 50%;
+  transition: opacity 150ms var(--ease-out);
+}
+
+/* Animations that will be targeted by classes toggled from JS */
+:global(.pulse-fast) {
+  animation: pulse 400ms infinite alternate;
+}
+
+:global(.pulse-slow) {
+  animation: pulse 1200ms infinite alternate;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
+/* Fallback for prefers-reduced-motion: rely on a static opacity level instead */
+@media (prefers-reduced-motion: reduce) {
+  :global(.pulse-fast) {
+    animation: none;
+    opacity: 1;
+  }
+  :global(.pulse-slow) {
+    animation: none;
+    opacity: 0.8;
+  }
+}
+
+/*
+ * Hostile markers accept a tap; everything else in the ring stays transparent
+ * to the pointer so a click meant for the canvas is not eaten by the HUD.
+ */
+.markerGroup {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.ring {
+  pointer-events: none;
+}

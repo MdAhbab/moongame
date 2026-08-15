@@ -1,0 +1,58 @@
+/*
+ * Self-hosted fonts — Chakra Petch (HUD/numerals/headings) and Inter (body/prose).
+ *
+ * Both are SIL OFL 1.1 (see /fonts/OFL.txt), pulled from
+ * https://github.com/google/fonts/tree/main/ofl/{chakrapetch,inter} and
+ * rebuilt locally rather than loaded from a CDN, because the CSP in
+ * vercel.json is `font-src 'self'` — same-origin only.
+ *
+ * Each face is subsetted to exactly the characters the UI renders: basic
+ * Latin (letters, digits, standard punctuation) plus the handful of symbols
+ * used across src/ui, src/render and src/state (± · × — … and the HUD glyphs
+ * ⌖ ─ ▲ ▼ ◆ ◇ ◈ ⚡). Only the two weights each family actually uses are
+ * shipped: Chakra Petch 500/700, Inter 400/600. Total: ~30 KB for all four
+ * files, comfortably under budget.
+ *
+ * Chakra Petch's digit glyphs (0-9) were re-centred to equal advance widths
+ * before subsetting. The upstream font has no `tnum` OpenType feature, so
+ * base.css's `font-variant-numeric: tabular-nums` would otherwise have no
+ * effect on it — the numerals genuinely need to line up (HUD readouts,
+ * altitude, hull, score), so the fix is baked into the glyphs themselves
+ * rather than relying on a feature the font never shipped.
+ */
+
+@font-face {
+  font-family: 'Chakra Petch';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/chakra-petch-500.woff2') format('woff2');
+  unicode-range: U+0020-007E, U+00A0, U+00B1, U+00B7, U+00D7, U+2014, U+2026, U+2316, U+2500, U+25B2, U+25BC, U+25C6, U+25C7, U+25C8, U+26A1;
+}
+
+@font-face {
+  font-family: 'Chakra Petch';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/chakra-petch-700.woff2') format('woff2');
+  unicode-range: U+0020-007E, U+00A0, U+00B1, U+00B7, U+00D7, U+2014, U+2026, U+2316, U+2500, U+25B2, U+25BC, U+25C6, U+25C7, U+25C8, U+26A1;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/inter-400.woff2') format('woff2');
+  unicode-range: U+0020-007E, U+00A0, U+00B1, U+00B7, U+00D7, U+2014, U+2026, U+2316, U+2500, U+25B2, U+25BC, U+25C6, U+25C7, U+25C8, U+26A1;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/inter-600.woff2') format('woff2');
+  unicode-range: U+0020-007E, U+00A0, U+00B1, U+00B7, U+00D7, U+2014, U+2026, U+2316, U+2500, U+25B2, U+25BC, U+25C6, U+25C7, U+25C8, U+26A1;
+}

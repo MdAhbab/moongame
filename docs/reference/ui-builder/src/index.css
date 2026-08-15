@@ -1,0 +1,103 @@
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+@import 'tailwindcss';
+
+@theme {
+  --color-void: #05060a;
+  --color-surface: #0d1117;
+  --color-surface-raised: #151b24;
+  --color-regolith: #b8b4ad;
+  --color-earthshine: #2a3f5f;
+  --color-friendly: #7fe8ff;
+  --color-hostile: #ff8a3d;
+  --color-critical: #ffffff;
+  --color-caution: #ffc857;
+  --color-inert: #4a5058;
+  --color-text-primary: #e8edf2;
+  --color-text-secondary: #8b97a6;
+
+  --font-hud: 'Chakra Petch', ui-monospace, monospace;
+  --font-body: 'Inter', system-ui, sans-serif;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-void);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Tabular figures everywhere in the HUD so numerals never jitter. */
+.font-hud {
+  font-family: var(--font-hud);
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.hud-label {
+  font-family: var(--font-hud);
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+/* Subtle vertical scrim to guarantee text contrast over the bright moon. */
+.text-scrim {
+  background: linear-gradient(180deg, rgba(5, 6, 10, 0) 0%, rgba(5, 6, 10, 0.55) 45%, rgba(5, 6, 10, 0) 100%);
+}
+
+/* ---- Motion. Pulse rate is a data channel: slow = threatened, fast = critical. ---- */
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.42; }
+}
+@keyframes pulse-fast {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.28; }
+}
+@keyframes ring-sweep {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes enter-overshoot {
+  0% { opacity: 0; transform: translateY(6px) scale(0.98); }
+  70% { opacity: 1; transform: translateY(-1px) scale(1.008); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes count-nudge {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(2px); }
+}
+
+.pulse-slow { animation: pulse-slow 600ms ease-in-out infinite; }
+.pulse-fast { animation: pulse-fast 200ms ease-in-out infinite; }
+.enter-overshoot { animation: enter-overshoot 180ms cubic-bezier(0.34, 1.4, 0.64, 1) both; }
+
+/* Focus ring — 2px cyan, 2px offset, everywhere. */
+*:focus-visible {
+  outline: 2px solid var(--color-friendly);
+  outline-offset: 2px;
+}
+
+/* Reduced motion: pulses become steady dim states carrying identical info. */
+@media (prefers-reduced-motion: reduce) {
+  .pulse-slow, .pulse-fast { animation: none; }
+  .pulse-slow { opacity: 0.72; }
+  .pulse-fast { opacity: 0.9; }
+  .enter-overshoot { animation: none; }
+  .spin-sweep { animation: none !important; }
+}
+
+::-webkit-scrollbar { width: 0; height: 0; }

@@ -1,0 +1,50 @@
+/* src/ui/screens/BootScreen.module.css */
+.container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: var(--void);
+  font-family: var(--font-hud);
+}
+
+.title {
+  font-size: var(--text-3xl);
+  color: var(--friendly);
+  letter-spacing: var(--tracking-display);
+  margin-bottom: 32px;
+}
+
+.errorBox {
+  background: rgb(var(--surface-raised-rgb) / 0.8);
+  border: var(--stroke) solid var(--caution);
+  padding: 24px;
+  max-width: 500px;
+  text-align: center;
+  border-radius: var(--radius);
+}
+
+.errorBox p {
+  color: var(--text-primary);
+  margin-bottom: 24px;
+  font-size: var(--text-body);
+}
+
+.detecting {
+  color: var(--text-secondary);
+  font-size: var(--text-label);
+  animation: pulse-slow 1200ms infinite alternate;
+}
+
+@keyframes pulse-slow {
+  0% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .detecting {
+    animation: none;
+    opacity: 1;
+  }
+}

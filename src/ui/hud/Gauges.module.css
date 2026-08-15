@@ -1,0 +1,51 @@
+/* src/ui/hud/Gauges.module.css */
+.gaugeContainer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-hud);
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--text-primary);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+}
+
+.label {
+  width: 70px;
+}
+
+.label span {
+  display: inline-block;
+  min-width: 30px;
+  text-align: right;
+}
+
+.track {
+  width: 140px;
+  height: 8px;
+  background: var(--scrim);
+  border: var(--stroke) solid var(--hairline-strong);
+  border-radius: var(--radius);
+  overflow: hidden;
+  position: relative;
+  /* Segmented look (§8) - countable segments. We can use a repeating-linear-gradient */
+  mask-image: repeating-linear-gradient(to right, black 0, black 12px, transparent 12px, transparent 14px);
+  -webkit-mask-image: repeating-linear-gradient(to right, black 0, black 12px, transparent 12px, transparent 14px);
+}
+
+.hullFill {
+  width: 100%;
+  height: 100%;
+  background: var(--friendly);
+  transform-origin: left center;
+  will-change: transform;
+}
+
+.heatFill {
+  width: 100%;
+  height: 100%;
+  background: var(--hostile);
+  transform-origin: left center;
+  will-change: transform;
+}

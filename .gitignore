@@ -1,0 +1,26 @@
+node_modules/
+dist/
+coverage/
+.vite/
+*.tsbuildinfo
+*.log
+.DS_Store
+.env*
+# The example is the *documentation* of which variables exist, with no values in
+# it. `.env*` above would have silently excluded it, which is how a repo ends up
+# with a deployment nobody else can reproduce.
+!.env.example
+vite.config.*.timestamp-*
+test-results/
+playwright-report/
+
+# Local editor and agent configuration. Machine-specific, not project state.
+.claude/
+.vscode/
+.idea/
+
+# Full-resolution generated source art. Kept out of `public/` so it is not
+# copied into the build, and out of git so the repo does not carry 5 MB of
+# originals for images that ship at a tenth the size.
+art-source/
+.vercel

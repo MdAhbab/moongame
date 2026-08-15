@@ -1,0 +1,189 @@
+/* src/ui/screens/BriefingScreen.module.css */
+.container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: rgb(var(--void-rgb) / 0.82);
+  backdrop-filter: blur(10px);
+  padding: max(var(--safe-top), 24px) max(var(--safe-right), 24px) max(var(--safe-bottom), 24px) max(var(--safe-left), 24px);
+}
+
+.content {
+  width: 100%;
+  max-width: 440px;
+  background: rgb(var(--surface-rgb) / 0.7);
+  border: var(--stroke) solid var(--hairline);
+  border-left: var(--stroke-bold) solid var(--friendly);
+  border-radius: var(--radius);
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  animation: slideUp var(--dur-screen) var(--ease-out) both;
+}
+
+/* Wave number + title */
+.title {
+  font-family: var(--font-hud);
+  font-size: var(--text-2xl);
+  color: var(--friendly);
+  letter-spacing: var(--tracking-display);
+  margin: 0;
+}
+
+/* Briefing prose */
+.description {
+  font-size: var(--text-body);
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.5;
+  border-left: var(--stroke) solid var(--hairline-strong);
+  padding-left: 12px;
+}
+
+/* NEW ELEMENT banner */
+.newElement {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  color: var(--caution);
+  letter-spacing: var(--tracking-label);
+  background: rgb(var(--caution-rgb) / 0.08);
+  border: var(--stroke) solid rgb(var(--caution-rgb) / 0.3);
+  border-radius: var(--radius);
+  padding: 6px 12px;
+  animation: pulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes pulse {
+  from { border-color: rgb(var(--caution-rgb) / 0.2); }
+  to   { border-color: rgb(var(--caution-rgb) / 0.55); }
+}
+
+/* Stats definition list */
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 24px;
+  margin: 0;
+  background: rgb(var(--void-rgb) / 0.4);
+  border: var(--stroke) solid var(--hairline);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+
+.stats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.stats dt {
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+  letter-spacing: var(--tracking-label);
+}
+
+.stats dd {
+  font-family: var(--font-hud);
+  font-size: var(--text-body);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* Composition line (enemy types) */
+.composition {
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  color: var(--hostile);
+  letter-spacing: var(--tracking-label);
+  margin: 0;
+}
+
+/* Roster (surviving outposts) */
+.roster {
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+  letter-spacing: var(--tracking-label);
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(16px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .content {
+    animation: none;
+  }
+  .newElement {
+    animation: none;
+  }
+}
+
+/* Threat cards — what is coming and what it does. See ThreatCards. */
+.threats {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.threatCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 10px 12px;
+  border: var(--stroke) solid var(--hairline);
+  border-left: 2px solid var(--hostile);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.threatArt {
+  width: 64px;
+  height: 64px;
+  flex: 0 0 auto;
+  object-fit: contain;
+  image-rendering: auto;
+}
+
+.threatText {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.threatName {
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  color: var(--hostile);
+}
+
+.threatRole {
+  font-size: var(--text-label);
+  color: var(--text-primary);
+  line-height: 1.45;
+}
+
+.threatSilhouette {
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+  line-height: 1.4;
+}

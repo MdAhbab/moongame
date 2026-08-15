@@ -1,0 +1,28 @@
+/* src/ui/hud/SpeedReadout.module.css — mirrors AltitudeLadder so the two
+   right-edge instruments read as one stack rather than two widgets. */
+.readout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: var(--font-hud);
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--text-primary);
+  background: var(--scrim);
+  padding: 8px;
+  border-radius: var(--radius);
+  border: var(--stroke) solid var(--hairline);
+  min-width: 44px;
+}
+
+.value {
+  font-size: var(--text-xl);
+  margin-bottom: 4px;
+  line-height: 1;
+}
+
+.label {
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+  letter-spacing: var(--tracking-label);
+  line-height: 1;
+}

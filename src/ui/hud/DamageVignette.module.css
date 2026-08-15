@@ -1,0 +1,11 @@
+/* src/ui/hud/DamageVignette.module.css */
+.vignette {
+  position: absolute;
+  top: -10%; left: -10%; right: -10%; bottom: -10%;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(circle at top, var(--hostile) 0%, transparent 60%);
+  transform-origin: center center;
+  will-change: transform, opacity;
+  transition: opacity 100ms var(--ease-out);
+}

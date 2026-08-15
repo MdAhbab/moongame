@@ -1,0 +1,105 @@
+/* src/ui/screens/CreditsScreen.module.css */
+.container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  overflow: hidden;
+  padding: max(var(--safe-top), 24px) max(var(--safe-right), 24px) max(var(--safe-bottom), 24px) max(var(--safe-left), 24px);
+}
+
+/* Full-bleed background art */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  z-index: 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Dark gradient scrim for text legibility */
+.scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to bottom, rgb(var(--void-rgb) / 0.75) 0%, rgb(var(--void-rgb) / 0.55) 40%, rgb(var(--void-rgb) / 0.85) 100%);
+  z-index: 1;
+}
+
+/* Credits panel */
+.content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  align-items: center;
+  animation: fadeIn var(--dur-screen) var(--ease-out) both;
+}
+
+.title {
+  font-family: var(--font-hud);
+  font-size: var(--text-3xl);
+  color: var(--friendly);
+  letter-spacing: var(--tracking-display);
+  margin: 0;
+  text-shadow: 0 0 24px rgb(var(--friendly-rgb) / 0.4);
+}
+
+.subtitle {
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+  letter-spacing: 0.3em;
+  margin: -24px 0 0 0;
+  text-transform: uppercase;
+}
+
+.creditsList {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  text-align: center;
+  background: rgb(var(--void-rgb) / 0.55);
+  border: var(--stroke) solid var(--hairline);
+  border-radius: var(--radius);
+  padding: 24px 32px;
+  backdrop-filter: blur(6px);
+}
+
+.creditBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.role {
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+  letter-spacing: var(--tracking-label);
+}
+
+.name {
+  font-size: var(--text-body);
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.actions {
+  margin-top: 8px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

@@ -1,0 +1,42 @@
+/* src/ui/screens/TitleScreen.module.css */
+.container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  height: 100vh;
+  padding: max(var(--safe-top), 10%);
+  padding-left: max(var(--safe-left), 10%);
+  /* Scene renders behind us */
+}
+
+.menu {
+  background: rgb(var(--surface-rgb) / 0.4);
+  backdrop-filter: blur(8px);
+  padding: 32px 48px;
+  border-left: var(--stroke-bold) solid var(--friendly);
+  border-radius: var(--radius);
+}
+
+.title {
+  font-family: var(--font-hud);
+  font-size: var(--text-3xl);
+  color: var(--friendly);
+  letter-spacing: var(--tracking-display);
+  margin: 0 0 8px 0;
+}
+
+.level {
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  color: var(--caution);
+  letter-spacing: var(--tracking-label);
+  margin: 0 0 32px 0;
+}
+
+.buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 240px;
+}

@@ -1,0 +1,29 @@
+/* src/ui/hud/ComboMeter.module.css */
+.container {
+  font-family: var(--font-hud);
+  font-variant-numeric: tabular-nums lining-nums;
+  text-align: right;
+  letter-spacing: var(--tracking-label);
+}
+
+.scoreRow {
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+}
+
+.scoreRow span {
+  font-size: var(--text-xl);
+  color: var(--text-primary);
+  margin-left: 12px;
+}
+
+.comboRow {
+  font-size: var(--text-label);
+  color: var(--friendly);
+  margin-top: 4px;
+}
+
+.comboRow span {
+  font-size: var(--text-lg);
+  margin-right: 8px;
+}

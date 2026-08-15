@@ -1,0 +1,34 @@
+/* src/ui/hud/AltitudeLadder.module.css */
+.ladder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: var(--font-hud);
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--text-primary);
+  /* Use a translucent background so it's readable over the scene */
+  background: var(--scrim);
+  padding: 8px;
+  border-radius: var(--radius);
+  border: var(--stroke) solid var(--hairline);
+  min-width: 44px;
+}
+
+.trend {
+  font-size: var(--text-label);
+  color: var(--friendly);
+  line-height: 1;
+}
+
+.value {
+  font-size: var(--text-xl);
+  margin: 4px 0;
+  line-height: 1;
+}
+
+.label {
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+  letter-spacing: var(--tracking-label);
+  line-height: 1;
+}

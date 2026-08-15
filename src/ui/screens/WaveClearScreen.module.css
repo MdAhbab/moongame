@@ -1,0 +1,334 @@
+/* src/ui/screens/WaveClearScreen.module.css
+ * Staggered wave-clear breakdown (gameplan §14.3).
+ * The scene renders behind — this overlay sits on top via absolute positioning.
+ */
+
+.container {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  background: radial-gradient(ellipse at center, rgb(var(--void-rgb) / 0.15) 0%, rgb(var(--void-rgb) / 0.88) 70%);
+  padding: max(var(--safe-top), 24px) max(var(--safe-right), 24px) max(var(--safe-bottom), 24px) max(var(--safe-left), 24px);
+}
+
+.panel {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Wave badge — big cyan header */
+.waveBadge {
+  font-family: var(--font-hud);
+  font-size: var(--text-2xl);
+  color: var(--friendly);
+  letter-spacing: var(--tracking-display);
+  text-align: center;
+  animation: slideDown var(--dur-screen) var(--ease-out) both;
+}
+
+/* Achievement badge (flawless, perfect defense) */
+.bonusBadge {
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  color: var(--caution);
+  letter-spacing: var(--tracking-label);
+  text-align: center;
+  border: var(--stroke) solid rgb(var(--caution-rgb) / 0.35);
+  padding: 4px 12px;
+  border-radius: var(--radius);
+  background: rgb(var(--caution-rgb) / 0.07);
+  animation: fadeIn var(--dur-screen) 150ms var(--ease-out) both;
+}
+
+/* Stat lines list */
+.lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: var(--stroke) solid var(--hairline);
+  border-radius: var(--radius);
+  background: rgb(var(--void-rgb) / 0.55);
+  overflow: hidden;
+}
+
+/* Individual stat line */
+.statLine {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 12px 16px;
+  border-bottom: var(--stroke) solid var(--hairline);
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity var(--dur-out) var(--ease-out),
+    transform var(--dur-out) var(--ease-out);
+}
+
+.statLine:last-child {
+  border-bottom: none;
+}
+
+.statLineVisible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.statLineHero .statLabel {
+  font-size: var(--text-body);
+  color: var(--friendly);
+}
+
+.statLineHero .statValue {
+  font-size: var(--text-2xl);
+  color: var(--friendly);
+}
+
+.statLabel {
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+  letter-spacing: var(--tracking-label);
+}
+
+.statValue {
+  font-family: var(--font-hud);
+  font-size: var(--text-xl);
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Total row */
+.totalRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 16px 20px;
+  background: rgb(var(--friendly-rgb) / 0.06);
+  border: var(--stroke) solid rgb(var(--friendly-rgb) / 0.2);
+  border-radius: var(--radius);
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity var(--dur-out) var(--ease-out),
+    transform var(--dur-out) var(--ease-out);
+}
+
+.totalRowVisible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.totalLabel {
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  color: var(--text-secondary);
+  letter-spacing: var(--tracking-label);
+}
+
+.totalValue {
+  font-family: var(--font-hud);
+  font-size: var(--text-3xl);
+  color: var(--friendly);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--tracking-display);
+}
+
+/* Credits reward row */
+.creditsRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: rgb(255 180 50 / 0.1);
+  border: 1px solid rgb(255 180 50 / 0.35);
+  border-radius: var(--radius);
+  font-family: var(--font-hud);
+}
+
+.creditsLabel {
+  font-size: var(--text-label);
+  color: #ffd070;
+  letter-spacing: var(--tracking-label);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.creditsValue {
+  font-size: var(--text-xl);
+  color: #ffca40;
+  font-weight: bold;
+}
+
+/* Perk Selection Section */
+.perkSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.perkHeader {
+  font-family: var(--font-hud);
+  font-size: var(--text-sm);
+  color: var(--friendly);
+  letter-spacing: var(--tracking-label);
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.perkGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 600px) {
+  .perkGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.perkCard {
+  background: rgb(var(--void-rgb) / 0.75);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(8px);
+  text-align: left;
+}
+
+.perkCard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.4);
+}
+
+.perkCardSelected {
+  border-color: var(--friendly) !important;
+  background: rgb(var(--friendly-rgb) / 0.15) !important;
+  box-shadow: 0 0 20px rgb(var(--friendly-rgb) / 0.45) !important;
+  transform: scale(1.02);
+}
+
+.rarityCommon {
+  border-color: rgba(140, 180, 220, 0.4);
+}
+.rarityRare {
+  border-color: rgba(60, 160, 255, 0.7);
+  box-shadow: 0 0 10px rgba(60, 160, 255, 0.2);
+}
+.rarityEpic {
+  border-color: rgba(180, 70, 255, 0.8);
+  box-shadow: 0 0 12px rgba(180, 70, 255, 0.3);
+}
+.rarityLegendary {
+  border-color: rgba(255, 190, 40, 0.9);
+  box-shadow: 0 0 16px rgba(255, 190, 40, 0.4);
+}
+
+.perkTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.perkIcon {
+  font-size: 1.4rem;
+}
+
+.rarityBadge {
+  font-family: var(--font-hud);
+  font-size: 0.65rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.rarityCommon .rarityBadge { color: #8cb4dc; background: rgba(140, 180, 220, 0.15); }
+.rarityRare .rarityBadge { color: #3ca0ff; background: rgba(60, 160, 255, 0.2); }
+.rarityEpic .rarityBadge { color: #d060ff; background: rgba(180, 70, 255, 0.25); }
+.rarityLegendary .rarityBadge { color: #ffbe28; background: rgba(255, 190, 40, 0.25); }
+
+.perkTitle {
+  font-family: var(--font-hud);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.perkDesc {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.3;
+  flex: 1;
+}
+
+.perkBuffText {
+  font-size: 0.7rem;
+  color: var(--friendly);
+  font-family: var(--font-hud);
+  margin-top: 4px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+  padding-top: 4px;
+}
+
+/* Actions */
+.actions {
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity var(--dur-out) var(--ease-out),
+    transform var(--dur-out) var(--ease-out);
+}
+
+.actionsVisible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Keyframes */
+@keyframes slideDown {
+  from { transform: translateY(-16px); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .waveBadge,
+  .bonusBadge,
+  .statLine,
+  .totalRow,
+  .actions {
+    animation: none;
+    transition: none;
+    opacity: 1;
+    transform: none;
+  }
+  .statLineVisible,
+  .totalRowVisible,
+  .actionsVisible {
+    opacity: 1;
+    transform: none;
+  }
+}
