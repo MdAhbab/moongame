@@ -12,6 +12,15 @@ export interface MissileRefs {
 }
 
 /**
+ * Where the plume's mouth sits behind the missile's centre, u.
+ *
+ * Follows from the motor bell below — a 0.24 u cylinder centred on z = -0.86,
+ * so its rear face is at -0.98 — and parks the cone's mouth just inside it, so
+ * the flame emerges from the bell rather than starting in free space behind it.
+ */
+export const MISSILE_FLAME_ANCHOR = 0.95
+
+/**
  * A missile that looks like a missile.
  *
  * It was a plain 8-sided cylinder in flat unlit orange: a lozenge, with no
@@ -71,9 +80,17 @@ export const MissileInstances = forwardRef<MissileRefs, object>((_, ref) => {
 
     // The plume: a cone pointing backwards from the bell, additive, scaled per
     // frame so it flickers rather than sitting there as a fixed cardboard flame.
+    //
+    // Anchored with its mouth on the origin rather than translated back to the
+    // bell, because the frame loop scales this in Z and a baked offset would be
+    // scaled with it. It was: the mouth swung between z = -0.87 and -1.14 while
+    // the bell stayed at -0.98, so at every bright frame the plume unstuck from
+    // the nozzle and trailed 0.16 u behind the missile — a detach/reattach
+    // strobe at `MISSILE_FLAME_RATE`. With the mouth at zero, Z scale can only
+    // stretch the plume *backwards*, which is what a throttling motor does.
     const flameGeo = new THREE.ConeGeometry(0.26, 1.5, 10, 1, true)
     flameGeo.rotateX(-Math.PI / 2)
-    flameGeo.translate(0, 0, -1.7)
+    flameGeo.translate(0, 0, -0.75)
     registry.track(flameGeo)
 
     const flame = new THREE.InstancedMesh(flameGeo, Materials.thrustFlame, MAX_MISSILES)

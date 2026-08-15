@@ -283,7 +283,14 @@ export function TouchControls() {
 
       {/* Left edge: the slide rocker. Its own widget rather than a second axis
           on the stick — see `applySlide`. */}
-      <div className={styles.slideZone} data-touch-role="slide" aria-label="Slide left or right">
+      {/* `data-touch-role` is this file's own dispatch attribute and means
+          nothing to ARIA, so the `aria-label` here was sitting on a roleless
+          div — the same violation axe caught in the Hangar. The audit never
+          reached it because these controls only mount on a touch device.
+          `group` rather than `slider`: the zone is driven by touch alone, with
+          no tabIndex and no key handler, and `slider` would promise a keyboard
+          contract that does not exist. */}
+      <div className={styles.slideZone} data-touch-role="slide" role="group" aria-label="Slide left or right">
         <div className={styles.slideTrack}>
           <div className={styles.slideKnob} ref={(el) => { hudRefs.touchSlide = el }} />
           <span className={styles.slideLabel}>SLIDE</span>

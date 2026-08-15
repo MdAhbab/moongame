@@ -23,9 +23,9 @@ import { BombTarget, type BombTargetRefs } from './scene/BombTarget.tsx'
 // Instanced
 import { EnemyInstances, type EnemyRefs } from './instanced/EnemyInstances.tsx'
 import { ProjectileInstances, type ProjectileRefs } from './instanced/ProjectileInstances.tsx'
-import { MissileInstances, type MissileRefs } from './instanced/MissileInstances.tsx'
+import { MissileInstances, MISSILE_FLAME_ANCHOR, type MissileRefs } from './instanced/MissileInstances.tsx'
 import { BombInstances, type BombRefs } from './instanced/BombInstances.tsx'
-import { DroneInstances, type DroneRefs } from './instanced/DroneInstances.tsx'
+import { DroneInstances, DRONE_GLOW_OFFSET, type DroneRefs } from './instanced/DroneInstances.tsx'
 import { ParticleInstances, type ParticleRefs } from './instanced/ParticleInstances.tsx'
 import { DrainBeams, type DrainBeamRefs } from './instanced/DrainBeams.tsx'
 
@@ -538,8 +538,12 @@ export function RenderBridge({
 
         // The plume, on the same transform but breathing. Deterministic noise
         // keyed to the slot so two missiles in a volley do not pulse in lockstep.
+        // Stepped back to the bell here rather than in the geometry: the Z
+        // scale below is what stretches the flame, and it would stretch a baked
+        // offset too, walking the plume off the end of the motor.
         const flicker =
           1 - MISSILE_FLAME_DEPTH + MISSILE_FLAME_DEPTH * Math.sin(world.time * MISSILE_FLAME_RATE + slot * 2.1)
+        dummy.position.copy(pos).addScaledVector(dir, -MISSILE_FLAME_ANCHOR)
         dummy.scale.set(flicker, flicker, 0.7 + 0.5 * flicker)
         dummy.updateMatrix()
         missilesRef.current.flame.setMatrixAt(mCount, dummy.matrix)
@@ -608,8 +612,13 @@ export function RenderBridge({
         dronesRef.current.mesh.setMatrixAt(dCount, dummy.matrix)
 
         // Station-keeping glow, bobbing per drone so the formation looks alive.
+        // `facing` is the orthonormalised forward `orientTo` just wrote, which
+        // is the drone's local +Z, so stepping back along it puts the sphere at
+        // the tail. Offsetting the *position* rather than the geometry is what
+        // keeps the pulse a pulse: the scale below now touches only the radius.
         const pulse =
           1 - DRONE_GLOW_DEPTH + DRONE_GLOW_DEPTH * Math.sin(world.time * DRONE_GLOW_RATE + slot * 1.7)
+        dummy.position.copy(pos).addScaledVector(facing, -DRONE_GLOW_OFFSET)
         dummy.scale.setScalar(pulse)
         dummy.updateMatrix()
         dronesRef.current.glow.setMatrixAt(dCount, dummy.matrix)

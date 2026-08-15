@@ -340,6 +340,11 @@ export function HangarScreen(): React.JSX.Element {
               </span>
             </div>
             <div className={styles.tuningTrackWrapper}>
+              {/* The visible title is a `span`, so it names this slider for a
+                  sighted reader and for nobody else. `aria-valuetext` matters
+                  as much as the label: without it a screen reader announces
+                  "0.35", a number that appears nowhere on screen, instead of
+                  the offset the UI actually shows. */}
               <input
                 type="range"
                 min="-1"
@@ -348,6 +353,14 @@ export function HangarScreen(): React.JSX.Element {
                 value={currentSlotTuning}
                 onChange={(e) => setPartTuning(activeSlot, parseFloat(e.target.value))}
                 className={styles.tuningSlider}
+                aria-label={`${slotTuningMeta.title} — ${slotTuningMeta.left} to ${slotTuningMeta.right}`}
+                aria-valuetext={
+                  currentSlotTuning > 0
+                    ? `+${Math.round(currentSlotTuning * 100)}% toward ${slotTuningMeta.right}`
+                    : currentSlotTuning < 0
+                      ? `${Math.round(Math.abs(currentSlotTuning) * 100)}% toward ${slotTuningMeta.left}`
+                      : 'Balanced'
+                }
               />
               <div className={styles.tuningAxisLabels}>
                 <span>{slotTuningMeta.left}</span>
@@ -519,26 +532,39 @@ export function HangarScreen(): React.JSX.Element {
                   )}
                   <p className={styles.partDesc}>{part.description}</p>
 
-                  {/* Modifier pills */}
-                  <div className={styles.modifiers} aria-label="Part modifiers">
-                    {(
-                      Object.entries(part.modifiers) as [keyof LoadoutModifiers, number][]
-                    ).map(([field, value]) => {
-                      const pct = Math.round((value - 1) * 100)
-                      const sign = pct > 0 ? '+' : ''
-                      const buff = isBuff(field, value)
-                      return (
-                        <span
-                          key={field}
-                          className={`${styles.modPill} ${buff ? styles.modBuff : styles.modNerf}`}
-                          title={FIELD_LABELS[field]}
-                        >
-                          {FIELD_LABELS[field]} {sign}
-                          {pct}%
-                        </span>
-                      )
-                    })}
-                  </div>
+                  {/* Modifier pills.
+                      `role="list"` is what makes the `aria-label` legal: an
+                      unadorned div has no role, and ARIA forbids naming
+                      something that is not anything. The pills genuinely are a
+                      list of modifiers, so the honest role also fixes the
+                      violation.
+                      Guarded on emptiness because the six stock parts carry
+                      `modifiers: {}` — an announced but childless list is a
+                      promise of content that isn't there, and axe only lets it
+                      pass by grading empty lists "incomplete" rather than
+                      failing them. */}
+                  {Object.keys(part.modifiers).length > 0 && (
+                    <div className={styles.modifiers} role="list" aria-label="Part modifiers">
+                      {(
+                        Object.entries(part.modifiers) as [keyof LoadoutModifiers, number][]
+                      ).map(([field, value]) => {
+                        const pct = Math.round((value - 1) * 100)
+                        const sign = pct > 0 ? '+' : ''
+                        const buff = isBuff(field, value)
+                        return (
+                          <span
+                            key={field}
+                            role="listitem"
+                            className={`${styles.modPill} ${buff ? styles.modBuff : styles.modNerf}`}
+                            title={FIELD_LABELS[field]}
+                          >
+                            {FIELD_LABELS[field]} {sign}
+                            {pct}%
+                          </span>
+                        )
+                      })}
+                    </div>
+                  )}
 
                   {!isOwned && (
                     <button

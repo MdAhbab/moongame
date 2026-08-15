@@ -37,11 +37,22 @@ export const TRACER_RADIUS = 0.085
  * bars longer than the craft. A fixed reference keeps every round the same
  * length at the same speed, on every machine.
  *
- * 70 Hz puts a 170 u/s cannon round at 2.4 u — about two-thirds of the craft's
- * length. Long enough to read direction at a glance, short enough that a
- * stream of them stays a stream rather than a solid line.
+ * Was 70 Hz, chosen from screenshots on the reasoning that it put a 170 u/s
+ * round at 2.4 u — two-thirds of the craft's length. Flying it showed why that
+ * reasoning was too generous to itself: 2.4 u is two-thirds of the craft only
+ * *at the muzzle*, and a round is never seen there. By the time one is clear of
+ * the hull it is tens of units downrange and projects to under ten pixels, so
+ * a burst read as a few sparse specks rather than a stream. The spacing makes
+ * it worse — `FIRE_INTERVAL` 0.11 s at 170 u/s puts 18.7 u between rounds, so
+ * at 2.4 u the line was only 13% lit and the gaps carried the image.
+ *
+ * 45 Hz puts the same round at 3.8 u: a fifth of the gap rather than an
+ * eighth, still comfortably under `TRACER_MAX_LENGTH`, and still nowhere near
+ * a solid line — the gap is four times the dash. It also lifts the Interceptor
+ * (76 u/s) to 1.7 u, off the floor it used to sit on, so enemy rounds again
+ * differ in length by how fast they actually travel.
  */
-export const TRACER_REFERENCE_HZ = 70
+export const TRACER_REFERENCE_HZ = 45
 
 /** Floor, so a slow round is still a dash rather than a dot. */
 export const TRACER_MIN_LENGTH = 1.5
@@ -58,9 +69,19 @@ export const TRACER_MAX_LENGTH = 4.0
  * Slow and shallow. A drone is a companion, not an alarm: it should be legible
  * as *alive* in peripheral vision without ever competing with a threat for
  * attention.
+ *
+ * The old 6 rad/s × 0.3 did not match that description. 6 rad/s is 0.95 Hz —
+ * a pulse a second, nearer a warning light than a breath — and a depth of 0.3
+ * drives the scale between 0.4 and 1.0, a two-and-a-half-fold swing. Four
+ * drones each phase-offset by 1.7 rad turned the formation into a shimmer at
+ * the edge of vision, which is the one thing the paragraph above rules out.
+ *
+ * 2.4 rad/s is 0.38 Hz, a ~2.6 s cycle that reads as breathing, and 0.16 keeps
+ * the scale in 0.68–1.0, where the eye reads a change in brightness rather
+ * than a change in size.
  */
-export const DRONE_GLOW_RATE = 6
-export const DRONE_GLOW_DEPTH = 0.3
+export const DRONE_GLOW_RATE = 2.4
+export const DRONE_GLOW_DEPTH = 0.16
 
 /* ------------------------------------------------------------------ */
 /* Missiles                                                            */

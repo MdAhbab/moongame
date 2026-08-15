@@ -12,6 +12,17 @@ export interface DroneRefs {
 }
 
 /**
+ * How far behind the drone's centre the thruster glow sits, u.
+ *
+ * Follows from the hull below rather than from taste — the flattened
+ * octahedron core reaches z = -0.46, so this parks the sphere at the tail with
+ * its far edge just clear of the skin. It lives here, beside the geometry that
+ * explains it, for the reason `render/tuning.ts` gives for *not* collecting
+ * every number into one file.
+ */
+export const DRONE_GLOW_OFFSET = 0.42
+
+/**
  * The escort drone (§7.4).
  *
  * Deliberately *not* a small copy of the player's craft. It has to be readable
@@ -60,8 +71,13 @@ export const DroneInstances = forwardRef<DroneRefs, object>((_, ref) => {
     mesh.frustumCulled = false
     registry.track(mesh)
 
+    // Centred on the origin, *not* translated back to the tail. Baking the
+    // offset into the geometry means any per-instance scale multiplies the
+    // offset too, so pulsing the glow walked it up and down the drone's axis
+    // instead of pulsing it in place — at the bottom of the pulse the whole
+    // sphere sat inside the hull and vanished. `DRONE_GLOW_OFFSET` moves it to
+    // the tail per instance, after the scale, where the scale cannot reach it.
     const glowGeo = new THREE.SphereGeometry(0.17, 8, 6)
-    glowGeo.translate(0, 0, -0.42)
     registry.track(glowGeo)
 
     const glow = new THREE.InstancedMesh(glowGeo, Materials.exhaust, MAX_DRONES)
