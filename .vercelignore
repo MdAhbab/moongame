@@ -2,9 +2,14 @@
 #
 # `api/` is thirteen serverless functions — accounts, passkeys, saves and the
 # replay-verified leaderboard — and Vercel's Hobby plan allows twelve. They are
-# genuinely optional: `cloudAvailable()` probes `/api/account`, gets HTML back on
-# a static deployment, and the whole game runs locally from there. Nothing about
-# flying, scoring or progression depends on them.
+# genuinely optional: `cloudAvailable()` probes `/api/account` and takes the
+# answer as "no cloud", and the whole game runs locally from there. Nothing
+# about flying, scoring or progression depends on them.
+#
+# Verified against the live deployment rather than assumed: with no `api/` and
+# no SPA rewrite, Vercel answers that probe with a 404 in `text/plain` — not
+# the HTML this note used to claim. `cloudAvailable()` is right either way,
+# because it returns false on 404 before it ever looks at the content type.
 #
 # To turn them on later: move to a Pro plan (or fold the auth routes into one
 # handler to get under the limit), delete these two lines, and set the variables

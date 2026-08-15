@@ -27,9 +27,25 @@ async function boot(page: Page): Promise<void> {
  * signal available once `onError` has hidden the element.
  */
 async function expectImagesLoaded(page: Page, where: string): Promise<void> {
+  // Settle first, then judge. `complete` goes true for a loaded image *and* for
+  // one that failed, so waiting on it separates "still in flight" from
+  // "resolved to nothing" — and only the second is what this file is about.
+  //
+  // Folding `!img.complete` into the filter instead, as this did, makes the
+  // assertion a race against the download. Against a preview server on
+  // localhost the images are there within the same tick and it always passed;
+  // pointed at the real deployment it failed on `harvester.png`, the largest
+  // card at 101 KB, which was still arriving. The art was fine — the test was
+  // reporting latency as a 404.
+  await page.waitForFunction(
+    () => [...document.querySelectorAll('img')].every((img) => img.complete),
+    undefined,
+    { timeout: 20_000 },
+  )
+
   const broken = await page.evaluate(() =>
     [...document.querySelectorAll('img')]
-      .filter((img) => !img.complete || img.naturalWidth === 0)
+      .filter((img) => img.naturalWidth === 0)
       .map((img) => img.getAttribute('src') ?? '(no src)'),
   )
   expect(broken, `broken images on ${where}`).toEqual([])
