@@ -7,12 +7,31 @@
  * flying. It also makes "hold the button forever" self-defeating without
  * punishing the player with scarcity.
  *
- * **The crosshair cannot lie.** Bullets travel exactly along the nose ray,
- * always. V1 lerped fire direction 60% toward an auto-aim target while the
- * reticle sat at screen centre (`game.js:510`) — the interface asserted
- * precision aiming and the system did something else. Assist here is *visible
- * reticle magnetism* computed for the UI, never a redirection of the shot
- * (§8.4).
+ * **The crosshair cannot lie — so the bullet goes where the crosshair is.**
+ *
+ * §8.4 was written against V1, which lerped fire direction 60% toward an
+ * auto-aim target while the reticle sat at screen centre (`game.js:510`): the
+ * interface asserted precision aiming and the system quietly did something
+ * else. The fix was stated as "assist moves the *reticle*, never the shot", and
+ * bullets left strictly along `craft.nose`.
+ *
+ * That fix had the same flaw pointing the other way, and it only became visible
+ * once the reticle was actually drawn. The crosshair is rendered at
+ * `reticleAim` — the magnetised point — while the round left along the raw
+ * nose. So the game drew a crosshair on a target and then fired somewhere else.
+ * The lie was smaller and better-intentioned than V1's, but it was the same
+ * lie: the mark on the glass did not describe the weapon.
+ *
+ * There is exactly one arrangement in which the interface is honest *and* the
+ * assist assists: **fire at the point the crosshair is drawn at.** That is what
+ * `fire()` does. The consequences fall out cleanly:
+ *
+ *  - At Aim Assist 0 the reticle sits exactly on the nose ray, so the shot is
+ *    identical to the old behaviour, to the bit.
+ *  - At any other setting the round goes to the mark, and the mark is visible,
+ *    bounded by `ASSIST_MAX_ANGLE`, and under the player's control on a slider.
+ *  - The player can always see exactly how much help they are getting, because
+ *    the help *is* the distance between the crosshair and the nose.
  */
 import type { World } from '../core/World.ts'
 import { GameEvent } from '../core/World.ts'
@@ -60,14 +79,14 @@ const targetPosition: Vec3 = create()
 const flareDir: Vec3 = create()
 const bombDown: Vec3 = create()
 const bombVelocity: Vec3 = create()
+const fireDirection: Vec3 = create()
 
 /**
  * The reticle's magnetised aim point, in world space.
  *
- * Read by the render layer to draw where the reticle has been pulled to. The
- * *shot* still leaves along `craft.nose`; this is only where the crosshair is
- * drawn, so the player literally watches the assist happen and the interface
- * never contradicts the weapon.
+ * Read by the render layer to draw the crosshair, **and by `fire()` to aim the
+ * round**. One point, two consumers, no possible disagreement between what the
+ * player sees and what the gun does. At Aim Assist 0 it is the bare nose ray.
  */
 export const reticleAim: Vec3 = create()
 /** True while the reticle is magnetised onto something. */
@@ -86,8 +105,10 @@ export let reticleMagnetised = false
  * pip so the player can see the difference between where a thing *is* and where
  * to shoot — the whole skill of deflection shooting, made teachable.
  *
- * This is presentation only. `fire()` still sends the bullet down `craft.nose`,
- * exactly as §8.4 requires.
+ * Presentation only, and it stays that way: the lead pip is *advice*, not aim.
+ * Assist pulls the crosshair toward where the target **is**; leading it is the
+ * player's job, and the pip teaches the shape of the correction rather than
+ * applying it for them.
  */
 export const leadAim: Vec3 = create()
 /** True when `leadAim` holds a real solution this step. */
@@ -148,6 +169,12 @@ export function stepWeapons(world: World, dt: number): void {
   // same step the lock completes goes to the target rather than one step late.
   updateLock(world, dt)
 
+  // And the reticle before *that*, because the shot now leaves along it. Solving
+  // the crosshair after firing would send the round to where the crosshair was
+  // one step ago, which at 120 Hz is invisible but is still the interface and
+  // the weapon disagreeing.
+  updateAssist(world)
+
   if (world.input.firing) {
     if (craft.activeWeaponMode === 'missiles') {
       // A lock is an advantage, not a requirement: firing without one sends an
@@ -159,7 +186,6 @@ export function stepWeapons(world: World, dt: number): void {
     }
   }
 
-  updateAssist(world)
   updateAimSolutions(world)
 }
 
@@ -347,10 +373,17 @@ function fire(world: World): void {
   copy(muzzle, craft.position)
   addScaled(muzzle, craft.nose, CRAFT_MUZZLE_OFFSET)
 
+  // Down the crosshair. `reticleAim` is the nose ray at zero assist and the
+  // magnetised point otherwise, so this is *exactly* what the player is looking
+  // at — see the note at the top of this file.
+  sub(fireDirection, reticleAim, muzzle)
+  if (length(fireDirection) < 1e-4) copy(fireDirection, craft.nose)
+  normalize(fireDirection)
+
   const slot = spawnProjectile(
     world.playerProjectiles,
     muzzle,
-    craft.nose,
+    fireDirection,
     BULLET_SPEED * world.loadout.bulletSpeed,
     BULLET_LIFE,
     BULLET_DAMAGE * world.loadout.bulletDamage,
@@ -529,14 +562,21 @@ function launchMissile(world: World, targetSlot: number): void {
 }
 
 /**
- * §8.4 — visible reticle magnetism.
+ * §8.4 — visible aim assist.
  *
- * Finds the nearest valid target within a small angle of the nose and reports
- * where the reticle should be drawn. Strength is the player's Aim Assist slider
- * (0–100%, default 35% desktop / 70% touch). At 0 the reticle sits exactly on
- * the nose ray. At any setting the *bullet* still goes exactly where the nose
- * points — the system may help, but it may never contradict what the interface
- * asserts.
+ * Finds the nearest valid target within `ASSIST_MAX_ANGLE` of the nose and moves
+ * the aim point a fraction of the way onto it. Strength is the player's Aim
+ * Assist slider (0–100%, default 35% desktop / 70% touch):
+ *
+ *   0    the aim point is the bare nose ray — no help, and bit-identical to a
+ *        build with no assist code at all
+ *   0.35 the round lands a third of the way from the nose toward the target,
+ *        which turns a near miss into a hit and leaves a bad shot bad
+ *   1    the round goes to the target, within the cone
+ *
+ * The cone is the ceiling on all of it: assist can only ever help with a shot
+ * the player had already very nearly lined up, so it closes the gap between
+ * *aiming at something* and *hitting it* without ever aiming for them.
  * @hot-path
  */
 function updateAssist(world: World): void {

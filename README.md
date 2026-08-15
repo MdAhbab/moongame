@@ -35,6 +35,31 @@ Everything is rebindable in Settings → Controls. Gamepad and touch are support
 be flown with both hands on the keys and a thumb on the glass. The full generated
 reference is in [`docs/CONTROLS.md`](docs/CONTROLS.md).
 
+## The fight
+
+**Interceptors can be beaten, not just survived.** One stalks you, then winds up
+for just over a second — it stops manoeuvring, lines up, and visibly flares. Then
+it commits to a straight-line dive it *cannot* correct. Break that line as it
+commits and it blows past you into two seconds of exposed overshoot, where it
+takes 2.5× damage and cannot shoot. Flares during the wind-up abort the run
+outright. Trading fire head-on is the losing move.
+
+**Damage lands on a system, not just a number.** A hit degrades the engine, the
+weapon bay or the stabiliser. A hurt engine loses thrust and misfires; a hurt bay
+fires slower, runs hotter and jams; a hurt stabiliser costs turn authority and
+pulls the nose one consistent way, which you fly against by hand. Three pips on
+the HUD say which. Flying through an outpost's resupply radius repairs
+everything, and a respawn is a new airframe.
+
+**Perks stack across a run and are drafted one-of-three between waves.** All
+nineteen do exactly what they say — there is a test that walks the source and
+fails if any perk id is unreachable from code. Escort Drone Bay is the stackable
+one: each pick adds an autonomous drone, up to four, that holds formation on your
+wing and engages on its own.
+
+**Dying costs the build, not the run.** Death strips your perks and hands back a
+single legendary to restart from.
+
 ## What is worth knowing about the build
 
 - **Fixed 120 Hz simulation, interpolated rendering.** The world advances in constant

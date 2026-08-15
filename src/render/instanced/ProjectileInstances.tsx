@@ -2,6 +2,7 @@ import { useMemo, forwardRef } from 'react'
 import * as THREE from 'three'
 import { Materials } from '../materials/registry.ts'
 import { registry } from '../disposal.ts'
+import { TRACER_RADIUS } from '../tuning.ts'
 import { MAX_PLAYER_PROJECTILES, MAX_ENEMY_PROJECTILES } from '../../game/data/constants.ts'
 
 export interface ProjectileRefs {
@@ -29,7 +30,7 @@ export const ProjectileInstances = forwardRef<ProjectileRefs, object>((_, ref) =
   const meshes = useMemo(() => {
     // A unit-length capsule along +Z. The frame loop scales Z to the streak
     // length and X/Y to the calibre, so one geometry serves every round.
-    const geo = new THREE.CapsuleGeometry(0.085, 1, 3, 6)
+    const geo = new THREE.CapsuleGeometry(TRACER_RADIUS, 1, 3, 6)
     geo.rotateX(Math.PI / 2)
     registry.track(geo)
 

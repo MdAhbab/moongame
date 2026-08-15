@@ -243,11 +243,13 @@ export function SettingsScreen() {
             />
             <Slider
               label="Aim Assist"
+              description="How far the crosshair — and the shot with it — is pulled onto a target already near your nose. At 0 rounds go exactly where the nose points."
               min={0} max={100} value={settings.accessibility.aimAssist}
               onChange={(v) => updateSettings((s) => ({ ...s, accessibility: { ...s.accessibility, aimAssist: v } }))}
             />
             <Slider
               label="Enemy Damage"
+              description="Scales incoming damage. Below 100% hits cost less hull and less subsystem integrity."
               min={0} max={150} value={settings.accessibility.enemyDamage}
               onChange={(v) => updateSettings((s) => ({ ...s, accessibility: { ...s.accessibility, enemyDamage: v } }))}
             />

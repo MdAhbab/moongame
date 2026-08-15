@@ -15,6 +15,7 @@ import { damageCraft, damageEnemy } from '../../src/game/systems/CollisionSystem
 import { stepDrones } from '../../src/game/entities/Drone'
 import { PERKS } from '../../src/game/data/perks'
 import {
+  CRAFT_MUZZLE_OFFSET,
   EXPOSED_DAMAGE_MULTIPLIER,
   FIXED_DT,
   RESPAWN_TIME,
@@ -273,5 +274,90 @@ describe('death and respawn', () => {
 
     const survivor = PERKS.find((perk) => perk.id === world.activePerks[0])
     expect(survivor?.rarity, 'and that perk is a legendary').toBe('legendary')
+  })
+})
+
+describe('the bullet goes where the crosshair is', () => {
+  /** Fires one round and returns its unit direction of travel. */
+  function fireOnce(world: World): { x: number; y: number; z: number } {
+    world.input.firing = true
+    world.craft.fireCooldown = 0
+    for (let i = 0; i < 3 && world.playerProjectiles.pool.count === 0; i++) {
+      stepInput(world)
+      stepWeapons(world, FIXED_DT)
+    }
+    const slot = world.playerProjectiles.pool.dense[0] as number
+    const body = world.playerProjectiles.body
+    const vx = body.vx[slot] as number
+    const vy = body.vy[slot] as number
+    const vz = body.vz[slot] as number
+    const speed = Math.hypot(vx, vy, vz)
+    return { x: vx / speed, y: vy / speed, z: vz / speed }
+  }
+
+  it('fires exactly down the nose when assist is off', () => {
+    const world = createWorld('aim', 2)
+    world.difficulty.aimAssist = 0
+
+    // A target off to one side, well inside the assist cone.
+    const craft = world.craft
+    const enemy = world.enemies.pool.alloc()
+    world.enemies.kind[enemy] = EnemyKind.Harvester
+    world.enemies.hp[enemy] = 100
+    world.enemies.body.spawnAt(
+      enemy,
+      craft.position.x + craft.nose.x * 100 + craft.frame.right.x * 6,
+      craft.position.y + craft.nose.y * 100 + craft.frame.right.y * 6,
+      craft.position.z + craft.nose.z * 100 + craft.frame.right.z * 6,
+    )
+
+    const dir = fireOnce(world)
+    const alignment = dir.x * craft.nose.x + dir.y * craft.nose.y + dir.z * craft.nose.z
+    expect(alignment, 'zero assist must be bit-identical to no assist at all').toBeCloseTo(1, 6)
+  })
+
+  it('bends the shot toward the target by exactly the assist fraction', () => {
+    const world = createWorld('aim', 2)
+    world.difficulty.aimAssist = 1
+
+    const craft = world.craft
+    const enemy = world.enemies.pool.alloc()
+    world.enemies.kind[enemy] = EnemyKind.Harvester
+    world.enemies.hp[enemy] = 100
+    const ex = craft.position.x + craft.nose.x * 100 + craft.frame.right.x * 6
+    const ey = craft.position.y + craft.nose.y * 100 + craft.frame.right.y * 6
+    const ez = craft.position.z + craft.nose.z * 100 + craft.frame.right.z * 6
+    world.enemies.body.spawnAt(enemy, ex, ey, ez)
+
+    const dir = fireOnce(world)
+
+    // At full assist the round is aimed at the target itself, from the muzzle.
+    const mx = ex - (craft.position.x + craft.nose.x * CRAFT_MUZZLE_OFFSET)
+    const my = ey - (craft.position.y + craft.nose.y * CRAFT_MUZZLE_OFFSET)
+    const mz = ez - (craft.position.z + craft.nose.z * CRAFT_MUZZLE_OFFSET)
+    const len = Math.hypot(mx, my, mz)
+    const alignment = (dir.x * mx + dir.y * my + dir.z * mz) / len
+    expect(alignment, 'full assist puts the round on the mark the crosshair is drawn at').toBeCloseTo(1, 4)
+  })
+
+  it('cannot reach a target outside the assist cone', () => {
+    const world = createWorld('aim', 2)
+    world.difficulty.aimAssist = 1
+
+    // 90° off the nose: far outside ASSIST_MAX_ANGLE, so no help at all.
+    const craft = world.craft
+    const enemy = world.enemies.pool.alloc()
+    world.enemies.kind[enemy] = EnemyKind.Harvester
+    world.enemies.hp[enemy] = 100
+    world.enemies.body.spawnAt(
+      enemy,
+      craft.position.x + craft.frame.right.x * 60,
+      craft.position.y + craft.frame.right.y * 60,
+      craft.position.z + craft.frame.right.z * 60,
+    )
+
+    const dir = fireOnce(world)
+    const alignment = dir.x * craft.nose.x + dir.y * craft.nose.y + dir.z * craft.nose.z
+    expect(alignment, 'assist helps a shot you nearly made, never one you did not').toBeCloseTo(1, 6)
   })
 })

@@ -35,6 +35,19 @@ import { PostProcessing } from './effects/PostProcessing.tsx'
 import { EngineTrail, type EngineTrailRefs } from './effects/EngineTrail.tsx'
 import { BOMB_BLAST_RADIUS, R, WINDUP_TIME } from '../game/data/constants.ts'
 import { bombImpact, bombImpactValid } from '../game/systems/WeaponSystem.ts'
+import {
+  DIVE_SWELL,
+  DRONE_GLOW_DEPTH,
+  DRONE_GLOW_RATE,
+  EXPOSED_SHRINK,
+  MISSILE_FLAME_DEPTH,
+  MISSILE_FLAME_RATE,
+  TRACER_MAX_LENGTH,
+  TRACER_MIN_LENGTH,
+  TRACER_REFERENCE_HZ,
+  WINDUP_FLASH_RATE,
+  WINDUP_SWELL,
+} from './tuning.ts'
 import type { WorldPalette } from '../game/data/worlds.ts'
 
 /**
@@ -113,7 +126,7 @@ function orientStreak(
   // the real delta made the streak jump between 2 u and 8 u as the frame time
   // moved, which reads as the rounds changing size rather than as motion — and
   // right after a stall it drew bars longer than the craft.
-  const streak = Math.min(3.6, Math.max(1.6, speed * (1 / 90)))
+  const streak = Math.min(TRACER_MAX_LENGTH, Math.max(TRACER_MIN_LENGTH, speed / TRACER_REFERENCE_HZ))
   target.scale.set(1, 1, streak)
   target.updateMatrix()
 }
@@ -422,18 +435,18 @@ export function RenderBridge({
           let swell = 1
           if (ePhase === EnemyPhase.Winding) {
             const heat = 1 - Math.min(1, (world.enemies.timer[slot] as number) / WINDUP_TIME)
-            const pulse = 0.5 + 0.5 * Math.sin(world.time * 26)
+            const pulse = 0.5 + 0.5 * Math.sin(world.time * WINDUP_FLASH_RATE)
             const glow = 0.35 + 0.65 * heat
             color.setRGB(1, 0.55 + 0.45 * glow * pulse, 0.3 + 0.7 * glow * pulse)
-            swell = 1 + 0.22 * heat
+            swell = 1 + WINDUP_SWELL * heat
           } else if (ePhase === EnemyPhase.Diving) {
             color.setRGB(1, 1, 1)
-            swell = 1.12
+            swell = DIVE_SWELL
           } else if (ePhase === EnemyPhase.Exposed) {
             // Deliberately dimmer than a healthy one: "hurt and drifting".
             const flicker = 0.55 + 0.2 * Math.sin(world.time * 17)
             color.setRGB(flicker, flicker * 0.75, flicker * 0.6)
-            swell = 0.88
+            swell = EXPOSED_SHRINK
           } else {
             color.setRGB(1, 1, 1)
           }
@@ -525,7 +538,8 @@ export function RenderBridge({
 
         // The plume, on the same transform but breathing. Deterministic noise
         // keyed to the slot so two missiles in a volley do not pulse in lockstep.
-        const flicker = 0.72 + 0.28 * Math.sin(world.time * 47 + slot * 2.1)
+        const flicker =
+          1 - MISSILE_FLAME_DEPTH + MISSILE_FLAME_DEPTH * Math.sin(world.time * MISSILE_FLAME_RATE + slot * 2.1)
         dummy.scale.set(flicker, flicker, 0.7 + 0.5 * flicker)
         dummy.updateMatrix()
         missilesRef.current.flame.setMatrixAt(mCount, dummy.matrix)
@@ -594,7 +608,8 @@ export function RenderBridge({
         dronesRef.current.mesh.setMatrixAt(dCount, dummy.matrix)
 
         // Station-keeping glow, bobbing per drone so the formation looks alive.
-        const pulse = 0.7 + 0.3 * Math.sin(world.time * 6 + slot * 1.7)
+        const pulse =
+          1 - DRONE_GLOW_DEPTH + DRONE_GLOW_DEPTH * Math.sin(world.time * DRONE_GLOW_RATE + slot * 1.7)
         dummy.scale.setScalar(pulse)
         dummy.updateMatrix()
         dronesRef.current.glow.setMatrixAt(dCount, dummy.matrix)

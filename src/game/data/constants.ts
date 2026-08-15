@@ -567,7 +567,19 @@ export const RADIUS_SENTINEL = 4.0
  * in the player's favour).
  */
 export const ENEMY_MODEL_SLACK = 1.35
-export const RADIUS_PROJECTILE = 0.3
+/**
+ * Collision radius of a round, u.
+ *
+ * Larger than the tracer looks, and deliberately. The narrowphase is a
+ * continuous swept sphere, so this is not compensating for tunnelling — it is
+ * *forgiveness*: at 0.3 a shot had to be geometrically perfect against a 1.8 u
+ * Interceptor crossing at 30 u/s, and the difference between a hit and a miss
+ * was smaller than the tracer the player was watching. 0.55 gives back roughly
+ * a quarter of the effective target width, which is the margin between "I
+ * aimed at it" and "I hit it" without ever being wide enough to hit something
+ * the player was not pointing at.
+ */
+export const RADIUS_PROJECTILE = 0.55
 export const RADIUS_OUTPOST_TRIGGER = 15.0
 
 /* ------------------------------------------------------------------ */

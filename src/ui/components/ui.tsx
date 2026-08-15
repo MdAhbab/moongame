@@ -28,6 +28,7 @@ export function Button({
 
 export function Slider({
   label,
+  description,
   value,
   min = 0,
   max = 100,
@@ -35,6 +36,14 @@ export function Slider({
   onChange,
 }: {
   label: string
+  /**
+   * One line on what the setting does.
+   *
+   * `Toggle` has always had one and `Slider` has not, which left the sliders —
+   * the settings that change the *rules* rather than the presentation — as the
+   * only ones the player had to guess at.
+   */
+  description?: string
   value: number
   min?: number
   max?: number
@@ -50,6 +59,7 @@ export function Slider({
           {value}{suffix}
         </span>
       </div>
+      {description !== undefined && <span className={styles.toggleDescription}>{description}</span>}
       <div className={styles.sliderTrackContainer}>
         <div className={styles.sliderTrackBg} />
         <div className={styles.sliderTrackFill} style={{ width: `${pct}%` }} />
