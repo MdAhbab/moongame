@@ -8,6 +8,7 @@
 import { createRoot } from 'react-dom/client'
 
 import { App } from './ui/App.tsx'
+import { ErrorBoundary } from './ui/components/ErrorBoundary.tsx'
 import './styles/tokens.css'
 import './styles/base.css'
 import './styles/fonts.css'
@@ -35,5 +36,22 @@ if (container === null) {
    * while the production build — where React does not double-invoke — was
    * perfectly healthy. Every test passed against a game nobody could develop on.
    */
-  createRoot(container).render(<App />)
+  /*
+   * The boundary *above* `App`, not the one inside it.
+   *
+   * `App` renders its own per-screen `ErrorBoundary`, and a component cannot be
+   * protected by a boundary it renders itself — so anything `App` threw during
+   * render or from one of its own effects unmounted the entire root and left a
+   * black page with no text on it. That is exactly how a missing iOS Pointer
+   * Lock API presented: unplayable, silent, and invisible to every desktop test.
+   *
+   * This one catches that class of failure and prints what broke. It is not a
+   * substitute for fixing the fault; it is the difference between a bug report
+   * that says "the screen is dark" and one that names the function.
+   */
+  createRoot(container).render(
+    <ErrorBoundary screen="startup" root>
+      <App />
+    </ErrorBoundary>,
+  )
 }

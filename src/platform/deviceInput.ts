@@ -51,6 +51,44 @@ export type { Binding, Platform } from './keys'
 export { detectedPointer, resetPointerDetection, type PointerKind } from './deviceProfile'
 
 /* ------------------------------------------------------------------ */
+/* Capability                                                          */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Whether this browser implements the Pointer Lock API at all.
+ *
+ * **iOS Safari implements none of it.** Not a degraded version — `requestPointerLock`
+ * and `exitPointerLock` are both simply absent.
+ *
+ * That alone would be harmless; the game has touch controls and never needs the
+ * lock on a phone. What made it fatal is the third part of the API:
+ * `document.pointerLockElement` is `undefined` on iOS rather than `null`. So the
+ * obvious guard,
+ *
+ * ```ts
+ * if (document.pointerLockElement !== null) document.exitPointerLock()
+ * ```
+ *
+ * reads `undefined !== null` as **true**, walks into the branch, and calls a
+ * method that does not exist. `releasePointer` runs from an effect in `App` on
+ * the very first commit — the Title screen is not `Playing`, so the lock is
+ * "released" before one frame has been drawn — and because that effect belongs
+ * to the component that *renders* the error boundary, no boundary could catch
+ * it. React tore down the root and iOS users got an unexplained black screen.
+ * Every desktop test passed throughout, because every desktop browser has the API.
+ *
+ * Hence a positive check for the methods rather than an inference from the
+ * element: absence is the thing being tested, so it is what gets asked about.
+ */
+function pointerLockAvailable(): boolean {
+  return (
+    typeof document !== 'undefined' &&
+    typeof document.exitPointerLock === 'function' &&
+    typeof document.body?.requestPointerLock === 'function'
+  )
+}
+
+/* ------------------------------------------------------------------ */
 /* Tuning                                                              */
 /* ------------------------------------------------------------------ */
 
@@ -488,7 +526,9 @@ export function bindDeviceInput(simulation: Simulation): () => void {
     heldButtons.add(binding)
     if (controls.toggleFire && keybinds.fire.includes(binding)) fireLatched = !fireLatched
 
-    if (document.pointerLockElement !== document.body) {
+    // Same guard as `releasePointer`: an iPad with a trackpad attached delivers
+    // real `mousedown` events to a browser that has no Pointer Lock API.
+    if (pointerLockAvailable() && document.pointerLockElement !== document.body) {
       void document.body.requestPointerLock()
     }
   }
@@ -825,7 +865,13 @@ export function captureNextBinding(
   }
 }
 
-/** Releases pointer lock, e.g. when the pause menu opens. */
+/**
+ * Releases pointer lock, e.g. when the pause menu opens.
+ *
+ * Guarded by `pointerLockAvailable` because on iOS Safari this function used to
+ * be where the entire game died — see the note on that helper.
+ */
 export function releasePointer(): void {
+  if (!pointerLockAvailable()) return
   if (document.pointerLockElement !== null) document.exitPointerLock()
 }

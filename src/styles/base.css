@@ -244,6 +244,26 @@ button:hover {
 }
 
 /*
+ * The root boundary has no screen layout around it to sit inside — it replaces
+ * the entire app — so it carries its own. Margins rather than a flex centre, so
+ * a long stack trace scrolls the page instead of overflowing a centred box, and
+ * `--safe-*` insets because the device most likely to show this is a phone with
+ * a notch.
+ */
+.boundary-root {
+  max-width: 60ch;
+  margin: max(24px, var(--safe-top)) auto max(24px, var(--safe-bottom));
+  margin-inline: max(16px, var(--safe-left)) max(16px, var(--safe-right));
+}
+
+.boundary-root pre {
+  /* A message like "document.exitPointerLock is not a function." must not be
+     cut off on a 320 px screen — that clause is the whole diagnosis. */
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/*
  * §35.3 — reduced motion removes decoration and keeps information. Every
  * gameplay-informative animation has a static substitute rather than simply
  * being deleted, because reduced motion must not mean reduced information.
