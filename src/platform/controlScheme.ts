@@ -66,7 +66,7 @@ export const CONTROL_ROWS: readonly ControlRow[] = [
     label: 'Shoot',
     actions: ['fire'],
     note: 'Hold it. The gun has heat rather than ammunition, so it never runs out — it stops.',
-    touch: 'the ● button, right side',
+    touch: '◉ button',
     essential: true,
   },
   {
@@ -75,7 +75,9 @@ export const CONTROL_ROWS: readonly ControlRow[] = [
     label: 'Turn',
     actions: ['turnLeft', 'turnRight'],
     note: 'Or move the mouse. Turning changes where the nose points.',
-    touch: 'drag the left half of the screen',
+    // The stick is the whole left half and it floats to the thumb, so there is
+    // nothing to find and nothing to name.
+    touch: 'drag left side',
     essential: true,
   },
   {
@@ -84,7 +86,9 @@ export const CONTROL_ROWS: readonly ControlRow[] = [
     label: 'Slide',
     actions: ['strafeLeft', 'strafeRight'],
     note: 'Translation without turning — the way to break a firing solution without giving up your heading.',
-    touch: 'the side rocker, left edge',
+    // No `touch`: the rocker that used to carry this is gone. On a phone in
+    // landscape it sat across the outpost roster, and `resolveControls` prints
+    // nothing rather than naming a control that is not there.
     essential: true,
   },
   {
@@ -92,7 +96,7 @@ export const CONTROL_ROWS: readonly ControlRow[] = [
     group: 'flight',
     label: 'Climb / dive',
     actions: ['ascend', 'descend'],
-    touch: 'drag the right column up and down',
+    touch: 'drag up / down',
     essential: true,
   },
   {
@@ -101,7 +105,7 @@ export const CONTROL_ROWS: readonly ControlRow[] = [
     label: 'Boost',
     actions: ['boost'],
     note: '3 seconds, then 6 to recharge. Spend it on the leg that changes the outcome.',
-    touch: 'the ⏵⏵ button',
+    touch: '⏵⏵ button',
     essential: true,
   },
   {
@@ -110,7 +114,7 @@ export const CONTROL_ROWS: readonly ControlRow[] = [
     label: 'Brake',
     actions: ['brake'],
     note: 'The craft holds cruise by itself, so this is the only throttle control there is.',
-    touch: 'drag the right column down',
+    touch: 'drag THR down',
   },
   {
     id: 'switchWeapon',
@@ -118,7 +122,7 @@ export const CONTROL_ROWS: readonly ControlRow[] = [
     label: 'Weapon mode',
     actions: ['switchWeapon'],
     note: 'Pulse cannon or guided missiles. The mode is named under the crosshair, always.',
-    touch: 'the ⇋ switch button',
+    touch: '⇋ WPN button',
     essential: true,
   },
   {
@@ -127,7 +131,7 @@ export const CONTROL_ROWS: readonly ControlRow[] = [
     label: 'Missile lock',
     actions: ['lock'],
     note: 'Hold it on a target until the ring closes. The lock then keeps itself for four seconds — let go, fly, and fire when you are ready.',
-    touch: 'the ⌖ button',
+    touch: '⌖ button, or Auto Lock in Settings',
   },
   {
     id: 'bomb',
@@ -135,7 +139,7 @@ export const CONTROL_ROWS: readonly ControlRow[] = [
     label: 'Heavy bomb bay',
     actions: ['bomb'],
     note: 'The ring on the ground is where it will land, drawn at its true blast radius. A bomb keeps your speed, so it lands well ahead of you.',
-    touch: 'the 💣 bomb button',
+    touch: '💣 button',
   },
   {
     id: 'engineCut',
@@ -143,7 +147,7 @@ export const CONTROL_ROWS: readonly ControlRow[] = [
     label: 'Engine Cut / Newtonian Drift',
     actions: ['engineCut'],
     note: 'Cut propulsion and coast on momentum, turning freely. Press again — or boost — to relight.',
-    touch: 'the FLOAT button',
+    touch: '◇ DRIFT button',
   },
   {
     id: 'flare',
@@ -151,7 +155,7 @@ export const CONTROL_ROWS: readonly ControlRow[] = [
     label: 'Countermeasure flares',
     actions: ['flare'],
     note: 'Burns every hostile round within 40 u. Five per run — the answer to being cornered, not to being shot at.',
-    touch: 'the ◈ flare button',
+    touch: '◈ button',
   },
   {
     id: 'deployDrones',
@@ -159,7 +163,7 @@ export const CONTROL_ROWS: readonly ControlRow[] = [
     label: 'Launch escort drones',
     actions: ['deployDrones'],
     note: 'They fly your wing for 20 s and shoot on their own. Bring them home alive and the next launch is bigger — lose one and you start again at a single drone.',
-    touch: 'the 🛰 drone button',
+    touch: '🛰 button',
     essential: true,
   },
   {
@@ -168,7 +172,7 @@ export const CONTROL_ROWS: readonly ControlRow[] = [
     label: 'Orbital map',
     actions: ['map'],
     note: 'Held, not toggled. The rings are seconds of flight at cruise.',
-    touch: 'the map button',
+    // No touch control exists for this, so none is claimed.
   },
   {
     id: 'recentre',
@@ -181,7 +185,7 @@ export const CONTROL_ROWS: readonly ControlRow[] = [
     group: 'system',
     label: 'Pause',
     actions: ['pause'],
-    touch: 'the ❚❚ button',
+    touch: '❚❚ button',
   },
 ]
 
@@ -212,7 +216,19 @@ export function resolveControls(
       (options.essentialOnly !== true || row.essential === true),
   )
 
-  return rows.map((row) => {
+  /*
+   * A row the device cannot perform is dropped, not printed as an em dash.
+   *
+   * On a touch-only phone `Slide`, `Orbital map` and `Recentre aim` have no
+   * gesture at all, and the old code rendered each as "SLIDE —". That is worse
+   * than silence: it advertises a verb, withholds how to do it, and costs a
+   * line of a card that is already too tall for a phone in landscape.
+   */
+  const performable = rows.filter(
+    (row) => hasKeyboard || (hasTouch && row.touch !== undefined),
+  )
+
+  return performable.map((row) => {
     const keyed = hasKeyboard
       ? row.actions.map((action) => bindingsLabel(keybinds[action])).join(' · ')
       : ''

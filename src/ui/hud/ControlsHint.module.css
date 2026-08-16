@@ -13,8 +13,20 @@
   bottom: calc(58px + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
   z-index: 20;
-  max-width: min(470px, 80vw);
-  padding: 12px 18px;
+  /*
+   * Sized against the viewport rather than a fixed box.
+   *
+   * The card is the game's answer to "what am I supposed to do", and on a phone
+   * in landscape it was covering the buttons that answer it — a 470 px card
+   * with 12 px padding on a screen 390 px tall, sat 58 px up from a bottom edge
+   * already carrying two control clusters. `max-height` is the load-bearing
+   * half: it guarantees the card cannot grow into the controls no matter how
+   * many rows `resolveControls` returns for the device.
+   */
+  max-width: min(470px, 84vw);
+  max-height: min(42vh, 280px);
+  overflow: hidden;
+  padding: clamp(8px, 1.6vh, 12px) clamp(12px, 2.5vw, 18px);
   pointer-events: none;
 
   background: color-mix(in srgb, var(--panel, #0b1220) 78%, transparent);
@@ -30,11 +42,25 @@
   animation: hint-in 400ms ease-out both;
 }
 
+/*
+ * On a phone in portrait the card clears the control band rather than sitting
+ * on it. 58px from the bottom edge put it straight over the fire button — a
+ * card explaining how to shoot, covering the thing you shoot with.
+ */
+@media (pointer: coarse) and (hover: none) and (min-height: 521px) {
+  .hint {
+    /* Above the *upper* of the two stacked control rows, not the lower one:
+       portrait puts the mode buttons 90px up, so clearing only the action row
+       still left the card sitting on WPN. */
+    bottom: calc(144px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
 .objective {
-  margin: 0 0 10px;
+  margin: 0 0 clamp(6px, 1.2vh, 10px);
   font-family: var(--font-ui, system-ui), sans-serif;
-  font-size: var(--text-label, 0.78rem);
-  line-height: 1.5;
+  font-size: clamp(0.66rem, 1.6vh, 0.78rem);
+  line-height: 1.45;
   color: var(--text-secondary, #9fb0c8);
 }
 
@@ -46,29 +72,58 @@
 .rows {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 18px;
+  gap: clamp(3px, 0.8vh, 6px) clamp(10px, 2vw, 18px);
   margin: 0;
 }
 
 .row {
   display: flex;
   align-items: baseline;
-  gap: 7px;
+  gap: 6px;
 }
 
 .verb {
   font-family: var(--font-hud, monospace);
-  font-size: 0.64rem;
-  letter-spacing: 0.09em;
+  font-size: clamp(0.54rem, 1.3vh, 0.64rem);
+  letter-spacing: 0.08em;
   color: var(--text-secondary, #9fb0c8);
   margin: 0;
+  white-space: nowrap;
 }
 
 .how {
   font-family: var(--font-hud, monospace);
-  font-size: 0.72rem;
+  font-size: clamp(0.6rem, 1.45vh, 0.72rem);
   color: var(--friendly, #6fd3ff);
   margin: 0;
+}
+
+/*
+ * A phone in landscape. The bottom of the screen belongs to the controls, so
+ * the card moves out of it entirely and takes the free band under the score
+ * row instead. `bottom: auto` is required — without it the two offsets fight
+ * and the element keeps its old anchor.
+ */
+@media (max-height: 520px) {
+  .hint {
+    top: calc(38px + env(safe-area-inset-top, 0px));
+    bottom: auto;
+    max-height: min(38vh, 150px);
+    /* Narrow enough to sit in the channel between the hull gauges on the left
+       and the score stack on the right, rather than across them. */
+    max-width: min(360px, 50vw);
+  }
+
+  .objective {
+    /* Two lines of objective, then the rows. The prose repeats the Briefing
+       the player has just read; the control list does not exist anywhere else
+       on screen, so that is the half worth the pixels. */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
 }
 
 @keyframes hint-in {

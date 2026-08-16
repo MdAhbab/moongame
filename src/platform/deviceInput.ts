@@ -249,10 +249,17 @@ let captureHandler: ((binding: Binding, rejection: string | null) => void) | nul
  */
 export interface TouchState {
   steerX: number
+  /** Nose aim. A fraction of the stick's Y travel — see `STICK_AIM_FROM_Y`. */
   steerY: number
-  /** Lateral translation, -1..1. Its own widget, usable while steering. */
-  strafe: number
   throttle: number
+  /**
+   * Commanded altitude rate, -1..1, written by the stick's Y axis.
+   *
+   * There is no `strafe` beside it any more. Sliding had its own rocker on the
+   * left edge, and on a phone in landscape that widget sat across the outpost
+   * roster to buy a verb the keyboard reaches with a modifier. The glass has
+   * room for the controls that fly the craft, and this is one of them.
+   */
   climb: number
   firing: boolean
   boosting: boolean
@@ -267,7 +274,6 @@ export interface TouchState {
 export const touchState: TouchState = {
   steerX: 0,
   steerY: 0,
-  strafe: 0,
   throttle: 0,
   climb: 0,
   firing: false,
@@ -397,7 +403,6 @@ export function releaseAllInput(): void {
   pressLatch.deployDrones = false
   touchState.steerX = 0
   touchState.steerY = 0
-  touchState.strafe = 0
   touchState.throttle = 0
   touchState.climb = 0
   touchState.firing = false
@@ -731,7 +736,23 @@ export function bindDeviceInput(simulation: Simulation): () => void {
     if (isHeld('brake')) throttle = 0.3
 
     let firing = controls.autoFire || (controls.toggleFire ? fireLatched : isHeld('fire'))
-    let locking = isHeld('lock')
+    /*
+     * Auto-lock holds the lock control down for the player.
+     *
+     * Resolved *here*, in the input layer, exactly like `autoFire` — never in
+     * `WeaponSystem`. The simulation is replay-verified from a seed and an
+     * input log (§37.3), so a preference that changed what the world did
+     * without passing through `world.input` would make every replay of that run
+     * diverge on a machine whose settings differ. Written into the input, it is
+     * recorded and replayed like any other press.
+     *
+     * `updateLock` needs no help beyond this: a permanently held control
+     * acquires whatever is in the 26° cone and re-arms the memory each step.
+     * It does not fire anything — the missile still leaves on the *fire*
+     * control, in missile mode, so auto-lock arms the shot and the player
+     * still takes it.
+     */
+    let locking = controls.autoLock || isHeld('lock')
     // A latched press reads as held for this one step, which is exactly what the
     // simulation's edge detector needs to see. See `pressLatch`.
     let flaring = isHeld('flare') || pressLatch.flare
@@ -781,7 +802,6 @@ export function bindDeviceInput(simulation: Simulation): () => void {
     steerX += shapeAxis(touchState.steerX, deadzone, exponent)
     steerY += shapeAxis(touchState.steerY, deadzone, exponent)
     climb += touchState.climb
-    strafe += shapeAxis(touchState.strafe, deadzone, exponent)
     if (touchState.throttle !== 0) throttle = touchState.throttle
     firing = firing || touchState.firing
     locking = locking || touchState.locking
@@ -821,8 +841,15 @@ export function bindDeviceInput(simulation: Simulation): () => void {
     // player is actually holding lock; releasing drops it, so the next lock
     // starts from wherever the nose is pointing rather than from a target the
     // player tapped a minute ago.
+    //
+    // Gated on the control being *asserted* rather than on `locking`, which
+    // auto-lock pins true forever. Reading `locking` here would mean a target
+    // tapped once in wave 1 stayed the standing request for the rest of the
+    // run, which is precisely the stale mode this reset exists to prevent.
+    // With auto-lock off the two are identical, so the old behaviour is exact.
+    const lockAsserted = isHeld('lock') || touchState.locking || (pad.connected && pad.locking)
     input.requestLockTarget = requestedLockTarget
-    if (!locking) requestedLockTarget = -1
+    if (!lockAsserted) requestedLockTarget = -1
 
     // Consumed. Cleared *after* the write, so the step that runs next sees the
     // press exactly once however long the frame that delivered it was.

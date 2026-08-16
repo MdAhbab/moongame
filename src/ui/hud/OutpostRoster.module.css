@@ -102,3 +102,24 @@
     display: none;
   }
 }
+
+/*
+ * A phone in landscape has room for eight outposts only if each row is tight.
+ * The name column is the one that can afford to shrink: outpost names are short
+ * and `text-overflow` never triggers at these lengths, while the integrity
+ * percentage beside it is the number being scanned for.
+ */
+@media (max-height: 520px) {
+  .rosterHeader {
+    margin-bottom: 3px;
+  }
+
+  .rosterList {
+    gap: 1px;
+  }
+
+  .row {
+    grid-template-columns: 13px 60px 44px;
+    line-height: 1.25;
+  }
+}

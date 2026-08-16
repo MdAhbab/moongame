@@ -77,6 +77,12 @@ export function SettingsScreen() {
               onChange={(v) => updateSettings((s) => ({ ...s, controls: { ...s.controls, autoFire: v } }))}
             />
             <Toggle
+              label="Auto Lock"
+              description="Holds the missile lock for you. You still choose when to fire."
+              value={settings.controls.autoLock}
+              onChange={(v) => updateSettings((s) => ({ ...s, controls: { ...s.controls, autoLock: v } }))}
+            />
+            <Toggle
               label="Toggle Fire"
               description="Press once to start firing, again to stop"
               value={settings.controls.toggleFire}
@@ -181,8 +187,9 @@ export function SettingsScreen() {
                 <div className={styles.qualityLabel}>
                   <span>Graphics Quality</span>
                   <span className={styles.qualityHint}>
-                    Auto picks from your device. High adds bloom, god rays and sharper shadows —
-                    heavy on phones.
+                    Auto picks from your device and steps down if frames get slow. Low and High
+                    are kept exactly as you set them. High adds bloom, god rays and sharper
+                    shadows — heavy on phones, but yours to choose.
                   </span>
                 </div>
                 <div className={styles.qualityChoices} role="radiogroup" aria-label="Graphics quality">

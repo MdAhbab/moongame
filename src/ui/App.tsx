@@ -659,7 +659,14 @@ export function App(): React.JSX.Element {
       // heat out of it. Gated on p95 rather than the mean because a mean hides
       // exactly the stutter the player feels, and on a full window so a single
       // slow frame during wave spawn-in cannot trigger it.
-      if (screen === 'Playing' && tier !== 'Low') {
+      //
+      // Only on `'auto'`. `'low'` and `'high'` are the player overruling
+      // detection, and a setting the game quietly undoes is not a setting: a
+      // player who picks High on a phone to see the bloom got three slow frames
+      // and a toast telling them it had been taken away again, with no way to
+      // insist. Auto adapts; an explicit choice is honoured until they change
+      // it. Same rule as `resolveInitialTier`, which is where they disagreed.
+      if (screen === 'Playing' && tier !== 'Low' && qualitySetting === 'auto') {
         // Fast path: catastrophically slow frames drop straight to Low rather
         // than stepping down one tier per window. A device drawing at 1.4 fps
         // is not going to be rescued by Medium, and making it prove that
@@ -688,7 +695,7 @@ export function App(): React.JSX.Element {
         }
       }
     },
-    [simulation, buffers, setMetaSnapshot, audioDirector, haptics, tier, screen, setToast, monitor, stepping],
+    [simulation, buffers, setMetaSnapshot, audioDirector, haptics, tier, screen, setToast, monitor, stepping, qualitySetting],
   )
 
   /**

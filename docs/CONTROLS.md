@@ -74,20 +74,18 @@ Settings → Controls.
 
 | Action | Gesture |
 |---|---|
-| Shoot | the ● button, right side |
-| Turn | drag the left half of the screen |
-| Slide | the side rocker, left edge |
-| Climb / dive | drag the right column up and down |
-| Boost | the ⏵⏵ button |
-| Brake | drag the right column down |
-| Weapon mode | the ⇋ switch button |
-| Missile lock | the ⌖ button |
-| Heavy bomb bay | the 💣 bomb button |
-| Engine Cut / Newtonian Drift | the FLOAT button |
-| Countermeasure flares | the ◈ flare button |
-| Launch escort drones | the 🛰 drone button |
-| Orbital map | the map button |
-| Pause | the ❚❚ button |
+| Shoot | ◉ button |
+| Turn | drag left side |
+| Climb / dive | drag up / down |
+| Boost | ⏵⏵ button |
+| Brake | drag THR down |
+| Weapon mode | ⇋ WPN button |
+| Missile lock | ⌖ button, or Auto Lock in Settings |
+| Heavy bomb bay | 💣 button |
+| Engine Cut / Newtonian Drift | ◇ DRIFT button |
+| Countermeasure flares | ◈ button |
+| Launch escort drones | 🛰 button |
+| Pause | ❚❚ button |
 
 Every widget owns its own pointer, so steering, throttle and firing
 are three fingers rather than three turns. Tap a hostile marker on the

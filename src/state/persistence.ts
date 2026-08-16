@@ -79,6 +79,16 @@ export interface Settings {
   }
   controls: {
     autoFire: boolean
+    /**
+     * Hold the missile lock for the player.
+     *
+     * On by default. Locking is a two-handed control — hold `lock` on a target
+     * while still flying and shooting — and on glass that meant a dedicated
+     * button competing for a thumb that was already steering. It arms the shot
+     * only; the missile still leaves on the fire control, so the decision to
+     * spend it stays with the player.
+     */
+    autoLock: boolean
     toggleFire: boolean
     /** Percent. 100 = the tuned default; see `MOUSE_GAIN` in deviceInput. */
     mouseSensitivity: number
@@ -160,6 +170,7 @@ export const defaultData: PersistedData = {
     display: { quality: 'auto', hudScale: 100, colorMode: 'default' },
     controls: {
       autoFire: false,
+      autoLock: true,
       toggleFire: false,
       mouseSensitivity: 100,
       invertY: false,
@@ -392,6 +403,10 @@ export function parseSettings(value: unknown): Settings {
     },
     controls: {
       autoFire: bool(controls.autoFire, d.controls.autoFire),
+      // No version bump for this one. The parser is total, so a v8 save with no
+      // `autoLock` key reads the default here exactly as a fresh install does,
+      // and a migration branch would be a no-op with a number attached.
+      autoLock: bool(controls.autoLock, d.controls.autoLock),
       toggleFire: bool(controls.toggleFire, d.controls.toggleFire),
       mouseSensitivity: num(controls.mouseSensitivity, 10, 300, d.controls.mouseSensitivity),
       invertY: bool(controls.invertY, d.controls.invertY),

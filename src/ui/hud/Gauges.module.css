@@ -49,3 +49,28 @@
   transform-origin: left center;
   will-change: transform;
 }
+
+/*
+ * On glass the hull and heat gauges give up width first.
+ *
+ * `70px` of label beside `140px` of track is 222 px of a 750 px landscape
+ * viewport spent on two numbers, and it was reaching far enough across the top
+ * edge to sit under the objective card. The bar is read as a *proportion*, so
+ * it loses nothing by being shorter — the segments stay countable.
+ */
+@media (pointer: coarse) and (hover: none) {
+  .gaugeContainer {
+    gap: 8px;
+  }
+
+  .label {
+    width: 52px;
+  }
+
+  .track {
+    width: 88px;
+    height: 7px;
+    mask-image: repeating-linear-gradient(to right, black 0, black 8px, transparent 8px, transparent 9px);
+    -webkit-mask-image: repeating-linear-gradient(to right, black 0, black 8px, transparent 8px, transparent 9px);
+  }
+}

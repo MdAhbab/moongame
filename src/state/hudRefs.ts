@@ -58,9 +58,7 @@ export interface HudRefs {
   
   touchStick: HTMLElement | null
   touchThrottle: HTMLElement | null
-  /** The slide rocker's knob. Its own widget so sliding is not a second stick axis. */
-  touchSlide: HTMLElement | null
-  
+
   /** MAX_MARKERS (56) SVG <g> nodes, pre-allocated at mount. */
   threatMarkers: (SVGGElement | null)[]
   drawCallsText: HTMLElement | null
@@ -125,7 +123,6 @@ export const hudRefs: HudRefs = {
   
   touchStick: null,
   touchThrottle: null,
-  touchSlide: null,
   
   threatMarkers: [],
   drawCallsText: null,
@@ -176,26 +173,35 @@ export function writeHud(frame: HudFrame, markers: ThreatMarker[]) {
     hudRefs.bombFill.style.transform = `scaleX(${readyFrac})`
   }
 
-  // Weapon & Engine Mode Status
+  /*
+   * Weapon & engine mode.
+   *
+   * These strings are deliberately one word each. They used to read
+   * "PULSE CANNON" and "PROPULSION [ACTIVE]", which on a phone in landscape
+   * spanned most of the bottom centre to say something the player already knew
+   * — the *unremarkable* state is the one that was shouting. What matters is
+   * the change, and a short word that swaps to another short word is easier to
+   * catch in peripheral vision than a long one that loses a bracketed suffix.
+   */
   if (hudRefs.weaponModeText) {
-    hudRefs.weaponModeText.textContent = frame.weaponMode === 'cannon' ? 'PULSE CANNON' : 'HOMING MISSILES'
+    hudRefs.weaponModeText.textContent = frame.weaponMode === 'cannon' ? 'PULSE' : 'MISSILE'
   }
   if (hudRefs.engineModeText) {
     if (frame.engineCut) {
-      hudRefs.engineModeText.textContent = 'DRIFT FLOAT [ENGINE OFF]'
+      hudRefs.engineModeText.textContent = 'DRIFT'
       hudRefs.engineModeText.style.color = 'var(--friendly)'
     } else {
-      hudRefs.engineModeText.textContent = 'PROPULSION [ACTIVE]'
+      hudRefs.engineModeText.textContent = 'ENGINE'
       hudRefs.engineModeText.style.color = 'var(--text-secondary)'
     }
   }
   if (hudRefs.flareText) {
-    hudRefs.flareText.textContent = `FLARES: ${frame.flaresRemaining}`
+    hudRefs.flareText.textContent = `◈ ${frame.flaresRemaining}`
   }
   if (hudRefs.aegisText) {
     if (frame.aegisShield > 0) {
       hudRefs.aegisText.style.display = 'inline-block'
-      hudRefs.aegisText.textContent = `AEGIS SHIELD: ${Math.ceil(frame.aegisShield)}`
+      hudRefs.aegisText.textContent = `AEGIS ${Math.ceil(frame.aegisShield)}`
     } else {
       hudRefs.aegisText.style.display = 'none'
     }
@@ -240,7 +246,7 @@ export function writeHud(frame: HudFrame, markers: ThreatMarker[]) {
   // away from the thing you are shooting at.
   if (hudRefs.targetReadout) {
     if (frame.lockKind === null) {
-      hudRefs.targetReadout.textContent = 'NO TARGET'
+      hudRefs.targetReadout.textContent = '—'
       hudRefs.targetReadout.style.color = 'var(--text-secondary)'
     } else {
       hudRefs.targetReadout.textContent = `${frame.lockKind.toUpperCase()} · ${Math.round(frame.lockRange)}u`
@@ -271,7 +277,7 @@ export function writeHud(frame: HudFrame, markers: ThreatMarker[]) {
       hudRefs.droneCount.textContent = `🛰 ${frame.droneCooldown.toFixed(0)}s`
       hudRefs.droneCount.style.color = 'var(--text-secondary)'
     } else {
-      hudRefs.droneCount.textContent = `🛰 ×${frame.droneTier} READY`
+      hudRefs.droneCount.textContent = `🛰 ×${frame.droneTier}`
       hudRefs.droneCount.style.color = 'var(--caution)'
     }
   }
@@ -280,7 +286,7 @@ export function writeHud(frame: HudFrame, markers: ThreatMarker[]) {
     if (frame.lanceCharge > 0) {
       hudRefs.lanceCharge.style.display = 'inline-block'
       const ready = frame.lanceCharge >= 1
-      hudRefs.lanceCharge.textContent = ready ? '☀ LANCE READY' : `☀ ${Math.round(frame.lanceCharge * 100)}%`
+      hudRefs.lanceCharge.textContent = ready ? '☀ READY' : `☀ ${Math.round(frame.lanceCharge * 100)}%`
       hudRefs.lanceCharge.style.color = ready ? 'var(--caution)' : 'var(--text-secondary)'
     } else {
       hudRefs.lanceCharge.style.display = 'none'

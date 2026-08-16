@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { hudRefs } from '../../state/hudRefs'
 import { touchState, hasTouch, latchPress } from '../../platform/deviceInput'
 import { useGameStore } from '../../state/useGameStore'
+import { useSettingsStore } from '../../state/useSettingsStore'
 import styles from './TouchControls.module.css'
 
 /**
@@ -21,6 +22,20 @@ import styles from './TouchControls.module.css'
  * steering, the game paused. There is now an explicit pause button, and a
  * second finger means a second control.
  *
+ * ## One stick, four directions
+ *
+ * The stick used to be a *turn* control only. Its vertical axis wrote `steerY`,
+ * which in `FlightSystem` aims the nose and nothing else — altitude lives on
+ * `input.climb`, which on glass was reachable only by dragging the throttle
+ * column *sideways*. So the most natural gesture on a touchscreen, pushing the
+ * stick up, made the craft look like it was climbing without changing its
+ * altitude by a metre, and the control that actually flew the ship was an
+ * undiscoverable horizontal scrub on a widget labelled THR.
+ *
+ * Now the stick's Y axis commands altitude, which is what a player pushing up
+ * is asking for, and the separate altitude control is gone. See `applyStick`
+ * for why it writes a little aim as well.
+ *
  * ## Combined with the keyboard, not substituting for it
  *
  * This writes into `touchState`, which `deviceInput` **adds** to the keyboard,
@@ -36,10 +51,38 @@ import styles from './TouchControls.module.css'
 const STICK_RANGE = 46
 /** Vertical travel in px for full throttle range. */
 const THROTTLE_RANGE = 58
-/** Horizontal travel in px for full lateral deflection on the slide rocker. */
-const SLIDE_RANGE = 44
 
-type Role = 'stick' | 'throttle' | 'fire' | 'boost' | 'lock' | 'flare' | 'bomb' | 'switchWeapon' | 'engineCut' | 'deployDrones' | 'climb' | 'slide'
+/**
+ * How much of the stick's vertical axis is spent aiming rather than climbing.
+ *
+ * Not zero, and not one. Altitude is a *commanded* quantity — the PD controller
+ * flies to it over the better part of a second — so a stick that only wrote
+ * `climb` would feel like it had a hold before anything moved. Pitch is damped
+ * far faster, so a modest aim term makes the nose answer on the same frame the
+ * thumb moves and the altitude follow behind it.
+ *
+ * Kept well under 1 because `FlightSystem` already pitches the nose from
+ * *measured* climb rate (`PITCH_FROM_CLIMB`). The two add, and at 1.0 a gentle
+ * climb pinned the nose at the pitch limit.
+ */
+const STICK_AIM_FROM_Y = 0.45
+
+type Role =
+  | 'stick'
+  | 'throttle'
+  | 'fire'
+  | 'boost'
+  | 'lock'
+  | 'flare'
+  | 'bomb'
+  | 'switchWeapon'
+  | 'engineCut'
+  | 'deployDrones'
+
+const ROLES = new Set<string>([
+  'fire', 'boost', 'lock', 'flare', 'bomb',
+  'switchWeapon', 'engineCut', 'deployDrones', 'throttle',
+])
 
 interface Assignment {
   role: Role
@@ -51,6 +94,16 @@ export function TouchControls() {
   const containerRef = useRef<HTMLDivElement>(null)
   const stickBaseRef = useRef<HTMLDivElement>(null)
   const push = useGameStore((s) => s.push)
+
+  /*
+   * A subscription, not a `getState()` read, and it does not violate §17.2.
+   *
+   * The rule is zero re-renders *during play*, and this value can only change
+   * on the Settings screen — which is not play. Reading it once at mount would
+   * be wrong in the other direction: the player toggles auto-lock, returns to a
+   * paused run, and finds the button they just asked for is missing.
+   */
+  const autoLock = useSettingsStore((s) => s.settings.controls.autoLock)
 
   useEffect(() => {
     const container = containerRef.current
@@ -72,15 +125,8 @@ export function TouchControls() {
     const roleFor = (target: EventTarget | null, x: number): Role => {
       if (target instanceof Element) {
         const button = target.closest('[data-touch-role]')
-        const named = button?.getAttribute('data-touch-role') as Role | null
-        if (
-          named === 'fire' || named === 'boost' || named === 'lock' || named === 'flare' ||
-          named === 'bomb' || named === 'switchWeapon' || named === 'engineCut' ||
-          named === 'deployDrones' ||
-          named === 'throttle' || named === 'climb' || named === 'slide'
-        ) {
-          return named
-        }
+        const named = button?.getAttribute('data-touch-role')
+        if (named !== null && named !== undefined && ROLES.has(named)) return named as Role
       }
       // Anywhere else on the left half is the floating stick. It floats rather
       // than sitting in a fixed place so the player never has to look down to
@@ -88,6 +134,15 @@ export function TouchControls() {
       return x < window.innerWidth / 2 ? 'stick' : 'throttle'
     }
 
+    /**
+     * Turn on X, altitude on Y.
+     *
+     * Screen Y grows downward, so a thumb pushed *up* is a negative `knobY` and
+     * has to become a positive climb — hence the sign flip. `steerY` keeps the
+     * screen's sign because that is the convention `FlightSystem` reads for aim
+     * (it negates internally), and it is the same pairing the mouse path uses:
+     * `steerY += shapedY` alongside `climb += -shapedY`.
+     */
     const applyStick = (assignment: Assignment, x: number, y: number): void => {
       const dx = x - assignment.originX
       const dy = y - assignment.originY
@@ -100,40 +155,35 @@ export function TouchControls() {
       if (hudRefs.touchStick !== null) {
         hudRefs.touchStick.style.transform = `translate(${knobX}px, ${knobY}px)`
       }
+      const normalisedY = knobY / STICK_RANGE
       touchState.steerX = knobX / STICK_RANGE
-      touchState.steerY = knobY / STICK_RANGE
-    }
-
-    const applyThrottle = (assignment: Assignment, x: number, y: number): void => {
-      // Vertical sets throttle, horizontal trims altitude — §8.3's right-thumb
-      // control, and the two are independent so one thumb does both.
-      const dy = assignment.originY - y
-      const dx = x - assignment.originX
-      const throttle = Math.max(0, Math.min(1, 0.65 + dy / THROTTLE_RANGE))
-      touchState.throttle = throttle
-      touchState.climb = Math.max(-1, Math.min(1, dx / THROTTLE_RANGE))
-
-      if (hudRefs.touchThrottle !== null) {
-        hudRefs.touchThrottle.style.transform = `translateY(${-Math.max(-THROTTLE_RANGE, Math.min(THROTTLE_RANGE, dy))}px)`
-      }
+      touchState.steerY = normalisedY * STICK_AIM_FROM_Y
+      touchState.climb = -normalisedY
     }
 
     /**
-     * The slide rocker: horizontal only, springs back to centre.
+     * The right column: throttle only.
      *
-     * Deliberately *not* folded into the stick. On a keyboard, turning and
-     * sliding are separated by a modifier; on glass they are separated by being
-     * two widgets, because a single stick cannot express both — a thumb pushed
-     * left has to mean one thing, and if it meant both the two verbs would be
-     * indistinguishable exactly where the player most needs to choose.
+     * It used to trim altitude on its horizontal axis, which is where the
+     * altitude control hid. That axis is now the stick's, and this widget does
+     * the one job its label claims.
      */
-    const applySlide = (assignment: Assignment, x: number): void => {
-      const dx = x - assignment.originX
-      const clamped = Math.max(-SLIDE_RANGE, Math.min(SLIDE_RANGE, dx))
-      if (hudRefs.touchSlide !== null) {
-        hudRefs.touchSlide.style.transform = `translateX(${clamped}px)`
+    const applyThrottle = (assignment: Assignment, y: number): void => {
+      const dy = assignment.originY - y
+      touchState.throttle = Math.max(0, Math.min(1, 0.65 + dy / THROTTLE_RANGE))
+
+      if (hudRefs.touchThrottle !== null) {
+        const travel = Math.max(-THROTTLE_RANGE, Math.min(THROTTLE_RANGE, dy))
+        hudRefs.touchThrottle.style.transform = `translateY(${-travel}px)`
       }
-      touchState.strafe = clamped / SLIDE_RANGE
+    }
+
+    const releaseStick = (): void => {
+      if (stickBaseRef.current !== null) stickBaseRef.current.style.display = 'none'
+      if (hudRefs.touchStick !== null) hudRefs.touchStick.style.transform = 'translate(0px, 0px)'
+      touchState.steerX = 0
+      touchState.steerY = 0
+      touchState.climb = 0
     }
 
     const onPointerDown = (event: PointerEvent): void => {
@@ -156,7 +206,7 @@ export function TouchControls() {
           applyStick(assignment, event.clientX, event.clientY)
           break
         case 'throttle':
-          applyThrottle(assignment, event.clientX, event.clientY)
+          applyThrottle(assignment, event.clientY)
           break
         case 'fire':
           touchState.firing = true
@@ -167,10 +217,10 @@ export function TouchControls() {
         case 'lock':
           touchState.locking = true
           break
-        // The four act buttons latch as well as hold. A quick tap can begin and
-        // end between two fixed steps, and without the latch the simulation
-        // never sees it — the button would work when pressed deliberately and
-        // do nothing when tapped, which is the worst kind of unreliable.
+        // The act buttons latch as well as hold. A quick tap can begin and end
+        // between two fixed steps, and without the latch the simulation never
+        // sees it — the button would work when pressed deliberately and do
+        // nothing when tapped, which is the worst kind of unreliable.
         case 'flare':
           touchState.flaring = true
           latchPress('flare')
@@ -191,12 +241,6 @@ export function TouchControls() {
           touchState.deployDrones = true
           latchPress('deployDrones')
           break
-        case 'climb':
-          touchState.climb = event.clientY < window.innerHeight / 2 ? 1 : -1
-          break
-        case 'slide':
-          applySlide(assignment, event.clientX)
-          break
       }
     }
 
@@ -205,8 +249,7 @@ export function TouchControls() {
       if (assignment === undefined) return
       wake()
       if (assignment.role === 'stick') applyStick(assignment, event.clientX, event.clientY)
-      else if (assignment.role === 'throttle') applyThrottle(assignment, event.clientX, event.clientY)
-      else if (assignment.role === 'slide') applySlide(assignment, event.clientX)
+      else if (assignment.role === 'throttle') applyThrottle(assignment, event.clientY)
     }
 
     const onPointerUp = (event: PointerEvent): void => {
@@ -216,16 +259,11 @@ export function TouchControls() {
       wake()
 
       switch (assignment.role) {
-        case 'stick': {
-          if (stickBaseRef.current !== null) stickBaseRef.current.style.display = 'none'
-          if (hudRefs.touchStick !== null) hudRefs.touchStick.style.transform = 'translate(0px, 0px)'
-          touchState.steerX = 0
-          touchState.steerY = 0
+        case 'stick':
+          releaseStick()
           break
-        }
         case 'throttle':
           touchState.throttle = 0
-          touchState.climb = 0
           if (hudRefs.touchThrottle !== null) hudRefs.touchThrottle.style.transform = 'translateY(0px)'
           break
         case 'fire':
@@ -252,13 +290,6 @@ export function TouchControls() {
         case 'deployDrones':
           touchState.deployDrones = false
           break
-        case 'climb':
-          touchState.climb = 0
-          break
-        case 'slide':
-          touchState.strafe = 0
-          if (hudRefs.touchSlide !== null) hudRefs.touchSlide.style.transform = 'translateX(0px)'
-          break
       }
     }
 
@@ -275,6 +306,10 @@ export function TouchControls() {
       window.removeEventListener('pointerup', onPointerUp)
       window.removeEventListener('pointercancel', onPointerUp)
       assignments.clear()
+      // A finger still down when the run ends would otherwise leave the axes
+      // pinned, and the next run would start mid-turn.
+      releaseStick()
+      touchState.throttle = 0
     }
   }, [])
 
@@ -289,29 +324,19 @@ export function TouchControls() {
         <div className={styles.stickKnob} ref={(el) => { hudRefs.touchStick = el }} />
       </div>
 
-      {/* Left edge: the slide rocker. Its own widget rather than a second axis
-          on the stick — see `applySlide`. */}
-      {/* `data-touch-role` is this file's own dispatch attribute and means
-          nothing to ARIA, so the `aria-label` here was sitting on a roleless
-          div — the same violation axe caught in the Hangar. The audit never
-          reached it because these controls only mount on a touch device.
-          `group` rather than `slider`: the zone is driven by touch alone, with
-          no tabIndex and no key handler, and `slider` would promise a keyboard
-          contract that does not exist. */}
-      <div className={styles.slideZone} data-touch-role="slide" role="group" aria-label="Slide left or right">
-        <div className={styles.slideTrack}>
-          <div className={styles.slideKnob} ref={(el) => { hudRefs.touchSlide = el }} />
-          <span className={styles.slideLabel}>SLIDE</span>
-        </div>
-      </div>
-
-      {/* Left utility buttons: Drift Float & Weapon Mode */}
+      {/* Left: the two mode controls. Short glyph-led labels — this cluster sits
+          over the outpost roster on a phone, and every character of it was
+          competing with information the player actually reads. */}
       <div className={styles.leftActionCluster}>
-        <button type="button" className={styles.actionButton} data-touch-role="engineCut" aria-label="Engine Cut Float">FLOAT</button>
-        <button type="button" className={styles.actionButton} data-touch-role="switchWeapon" aria-label="Switch Weapon">⇋</button>
+        <button type="button" className={styles.modeButton} data-touch-role="engineCut" aria-label="Engine cut — Newtonian drift">
+          ◇<span className={styles.modeText}>DRIFT</span>
+        </button>
+        <button type="button" className={styles.modeButton} data-touch-role="switchWeapon" aria-label="Switch weapon mode">
+          ⇋<span className={styles.modeText}>WPN</span>
+        </button>
       </div>
 
-      {/* Right thumb: throttle vertically, altitude trim horizontally. */}
+      {/* Right thumb: throttle. Vertical only — altitude is on the stick now. */}
       <div className={styles.throttleZone} data-touch-role="throttle">
         <div className={styles.throttleBase}>
           <div className={styles.throttleKnob} ref={(el) => { hudRefs.touchThrottle = el }} />
@@ -322,11 +347,16 @@ export function TouchControls() {
       {/* Action buttons. Each is its own pointer role, so any combination of
           them can be held together with the stick and the throttle. */}
       <div className={styles.actionCluster}>
-        <button type="button" className={styles.actionButton} data-touch-role="bomb" aria-label="Drop Heavy Bomb">💣</button>
-        <button type="button" className={styles.actionButton} data-touch-role="lock" aria-label="Missile lock">⌖</button>
+        <button type="button" className={styles.actionButton} data-touch-role="bomb" aria-label="Drop heavy bomb">💣</button>
+        {/* Only when the player is doing their own locking. With auto-lock on,
+            this button is a control that is already held for them, and a button
+            that does nothing is worse than no button at all. */}
+        {!autoLock && (
+          <button type="button" className={styles.actionButton} data-touch-role="lock" aria-label="Missile lock">⌖</button>
+        )}
         <button type="button" className={`${styles.actionButton} ${styles.actionFire}`} data-touch-role="fire" aria-label="Fire">◉</button>
         <button type="button" className={styles.actionButton} data-touch-role="boost" aria-label="Boost">⚡</button>
-        <button type="button" className={styles.actionButton} data-touch-role="flare" aria-label="Flares">◈</button>
+        <button type="button" className={styles.actionButton} data-touch-role="flare" aria-label="Countermeasure flares">◈</button>
         <button type="button" className={styles.actionButton} data-touch-role="deployDrones" aria-label="Launch escort drones">🛰</button>
       </div>
 

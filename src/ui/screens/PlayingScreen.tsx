@@ -61,14 +61,18 @@ export function PlayingScreen({ showHint = true }: { showHint?: boolean }) {
 
         {/* Bottom-Left: Boost & Bombs */}
         <div className={styles.bottomLeft}>
+          {/* Glyph, not glyph plus word. The bar underneath already says which
+              quantity this is; "⚡ BOOST" spent a third of the bottom-left on
+              repeating it. */}
           <div className={styles.boostGauge}>
-            <span className={styles.boostLabel}>⚡ BOOST</span>
+            <span className={styles.boostLabel} aria-hidden="true">⚡</span>
             <div className={styles.boostTrack}>
                <div ref={(el) => { hudRefs.boostFill = el }} className={styles.boostFill} />
             </div>
           </div>
           <div className={styles.bombGauge}>
-            <span className={styles.boostLabel}>💣 BOMB (<span ref={(el) => { hudRefs.bombText = el }}>READY</span>)</span>
+            <span className={styles.boostLabel} aria-hidden="true">💣</span>
+            <span className={styles.bombReady} ref={(el) => { hudRefs.bombText = el }}>READY</span>
             <div className={styles.bombTrack}>
                <div ref={(el) => { hudRefs.bombFill = el }} className={styles.bombFill} />
             </div>
@@ -82,14 +86,18 @@ export function PlayingScreen({ showHint = true }: { showHint?: boolean }) {
             <span className={styles.engineStatus} ref={(el) => { hudRefs.engineModeText = el }}>PROPULSION [ACTIVE]</span>
           </div>
           <span className={styles.aegisStatus} ref={(el) => { hudRefs.aegisText = el }} style={{ display: 'none' }}>
-            AEGIS SHIELD: 0
+            AEGIS 0
           </span>
-          {/* Craft condition: which system is hurt, and what is flying with you. */}
+          {/* Craft condition: which system is hurt, and what is flying with you.
+              The three-letter tags are folded away on a phone (see `.pipTag`),
+              where the glyph and its colour carry the same message in a third
+              of the width — these pips are read as a colour change, not as
+              prose, and the tag only earns its space where there is space. */}
           <div className={styles.conditionCluster}>
-            <span className={styles.systemPip} ref={(el) => { hudRefs.systemEngine = el }} title="Engine">⚙ ENG</span>
-            <span className={styles.systemPip} ref={(el) => { hudRefs.systemWeapon = el }} title="Weapon bay">⌁ WPN</span>
-            <span className={styles.systemPip} ref={(el) => { hudRefs.systemControl = el }} title="Stabiliser">⇅ CTL</span>
-            <span className={styles.dronePip} ref={(el) => { hudRefs.droneCount = el }} style={{ display: 'none' }}>🛰 ×1 READY</span>
+            <span className={styles.systemPip} ref={(el) => { hudRefs.systemEngine = el }} title="Engine" aria-label="Engine integrity">⚙<span className={styles.pipTag}> ENG</span></span>
+            <span className={styles.systemPip} ref={(el) => { hudRefs.systemWeapon = el }} title="Weapon bay" aria-label="Weapon bay integrity">⌁<span className={styles.pipTag}> WPN</span></span>
+            <span className={styles.systemPip} ref={(el) => { hudRefs.systemControl = el }} title="Stabiliser" aria-label="Stabiliser integrity">⇅<span className={styles.pipTag}> CTL</span></span>
+            <span className={styles.dronePip} ref={(el) => { hudRefs.droneCount = el }} style={{ display: 'none' }}>🛰 ×1</span>
             <span className={styles.lancePip} ref={(el) => { hudRefs.lanceCharge = el }} style={{ display: 'none' }}>☀ 0%</span>
           </div>
         </div>
@@ -103,10 +111,10 @@ export function PlayingScreen({ showHint = true }: { showHint?: boolean }) {
             </div>
           </div>
           <div className={styles.lockStatus}>
-             ⌖ LOCK <span ref={(el) => { hudRefs.lockProgress = el }}>—</span>
+             ⌖ <span ref={(el) => { hudRefs.lockProgress = el }}>—</span>
           </div>
           <div className={styles.flareStatus} ref={(el) => { hudRefs.flareText = el }}>
-             FLARES: 5
+             ◈ 5
           </div>
         </div>
 

@@ -13,8 +13,30 @@
   bottom: max(var(--safe-bottom), var(--hud-inset));
   left: max(var(--safe-left), var(--hud-inset));
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  grid-template-rows: auto 1fr auto;
+  /* `minmax(0, …)` for the same reason as the rows below: a bare `1fr` refuses
+     to shrink under its own min-content, so the fixed-width readouts in the
+     outer columns made the whole grid wider than the phone and pushed the
+     centre column's contents off the right edge. */
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  /*
+   * `minmax(0, 1fr)` on the middle row, not `1fr`.
+   *
+   * A bare `1fr` is `minmax(auto, 1fr)`, and that `auto` minimum is the row's
+   * max-content height — so the row could not shrink below the 300 px threat
+   * ring sitting in it. On a phone in landscape the overlay is about 314 px
+   * tall and the three rows wanted 480, so the grid simply grew and took the
+   * **entire bottom row off the bottom of the screen**: boost, bomb bay,
+   * weapon mode, engine mode, the system pips, the target readout, the lock
+   * meter and the flare count were all rendered at y ≈ 412 on a 342 px
+   * viewport, painted nowhere and readable by nothing.
+   *
+   * Nothing about it was touch-specific — any short window did it — which is
+   * why a desktop test at 1080p could never have caught it. The zero minimum
+   * lets the middle row give way, and the ring overflows its cell instead of
+   * evicting the HUD. It is a `pointer-events: none` outline drawn around the
+   * centre of the screen, so overlapping is what it is supposed to do anyway.
+   */
+  grid-template-rows: auto minmax(0, 1fr) auto;
   pointer-events: none;
   z-index: 10;
   zoom: var(--hud-scale);
@@ -58,6 +80,9 @@
 
 .waveLabel {
   margin-top: 6px;
+  /* The padding that clears the pause button squeezes this column enough to
+     break "WAVE 1" across two lines. */
+  white-space: nowrap;
   font-family: var(--font-hud);
   font-variant-numeric: tabular-nums lining-nums;
   font-size: var(--text-label);
@@ -132,12 +157,23 @@
   will-change: transform;
 }
 
+/*
+ * The threat ring is anchored to the centre of the screen, not laid out in the
+ * grid.
+ *
+ * As a grid item it was 300px of `auto` column on a 390px phone, so it — a
+ * decorative, `pointer-events: none` outline — dictated how much width was
+ * left for the readouts either side of it, and there was not enough. Taking it
+ * out of flow says what it actually means: this thing is centred on the
+ * reticle and owes the layout nothing.
+ */
 .center {
-  grid-column: 2;
-  grid-row: 2;
+  position: absolute;
+  inset: 0;
   display: flex;
   justify-content: center;
   align-items: center;
+  pointer-events: none;
 }
 
 /* Specific elements that aren't fully separate components yet */
@@ -242,6 +278,146 @@
   font-size: var(--text-label);
   color: var(--caution);
   margin-top: 4px;
+}
+
+.bombReady {
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  color: var(--friendly);
+}
+
+.pipTag {
+  /* Present by default; folded away on a phone. See the coarse-pointer block. */
+  letter-spacing: inherit;
+}
+
+/*
+ * ── The HUD on glass ────────────────────────────────────────────────
+ *
+ * Scoped to a coarse pointer that cannot hover — a phone or tablet, not a
+ * touchscreen laptop — because everything in here trades information density
+ * for room, and a desktop has the room. Matches `qualityTier.ts`'s test for
+ * the same reason it uses both halves: `pointer: coarse` alone is also true of
+ * a laptop with a touchscreen.
+ */
+@media (pointer: coarse) and (hover: none) {
+  /*
+   * A reserved band for the controls.
+   *
+   * The HUD and the on-glass controls both want the bottom edge, and they were
+   * simply drawn on top of each other — the touch layer is `z-index: 50` and
+   * the HUD is `10`, so the boost and bomb-bay bars sat *underneath* the DRIFT
+   * button and could not be read at all. Reserving the space is the honest fix:
+   * the controls need it, so the HUD gives it up and sits above them.
+   */
+  .hudOverlay {
+    /* Portrait stacks the mode buttons above the action row (there is no width
+       for them beside it), so the band it has to clear is two rows tall.
+       Sized against the smallest phone still sold — a 320x568 iPhone SE, where
+       a 112px band cleared the mode buttons by minus one pixel. */
+    padding-bottom: 120px;
+  }
+
+  /* Clear of the pause button, which lives in this exact corner. Before this
+     the score sat underneath it and the wave number behind the throttle. */
+  .topRight {
+    padding-right: 48px;
+  }
+
+  /* And clear of the throttle column, which occupies the full right edge of
+     the reserved band. */
+  .bottomRight {
+    padding-right: 76px;
+  }
+
+  .pipTag {
+    display: none;
+  }
+
+  .targetBlock {
+    min-width: 96px;
+  }
+
+  .targetHealthTrack {
+    width: 72px;
+  }
+
+  .boostTrack {
+    width: 68px;
+  }
+
+  .bombTrack {
+    width: 62px;
+  }
+
+  .modeCluster {
+    gap: 8px;
+  }
+
+  .conditionCluster {
+    gap: 8px;
+  }
+}
+
+/*
+ * A phone in landscape: the same screen, with a third of the height. The
+ * bottom row of the HUD is now sharing that edge with two control clusters and
+ * a throttle column, so it gives up its own margins first.
+ */
+@media (max-height: 520px) {
+  /*
+   * The middle band stops centring itself.
+   *
+   * `justify-content: center` puts the outpost roster and the altitude stack in
+   * the vertical middle of a 342 px screen, and with eight outposts the roster
+   * reaches far enough down to print VEGA across the DRIFT button while the
+   * altitude readout lands on the throttle column. Both are read top-down, so
+   * anchoring them to the top of the band costs nothing and hands the bottom
+   * third back to the controls that live there.
+   */
+  .leftCenter,
+  .rightCenter {
+    justify-content: flex-start;
+  }
+
+  .bottomLeft {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+
+  .bombGauge {
+    margin-top: 0;
+  }
+
+  .bottomRight {
+    gap: 3px;
+  }
+
+  .flareStatus,
+  .aegisStatus {
+    margin-top: 0;
+  }
+
+  .conditionCluster {
+    margin-top: 2px;
+  }
+}
+
+/*
+ * The reserved band, sized for a phone in landscape specifically: the controls
+ * are smaller here than in portrait, and 76px of a 342px screen is a fifth of
+ * it. Scoped to a coarse pointer so a short *desktop* window — which has no
+ * on-glass controls to make room for — keeps its full height.
+ */
+@media (pointer: coarse) and (hover: none) and (max-height: 520px) {
+  .hudOverlay {
+    padding-bottom: 62px;
+  }
+
+  .bottomRight {
+    padding-right: 46px;
+  }
 }
 
 .aegisStatus {

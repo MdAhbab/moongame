@@ -1,9 +1,17 @@
 /* src/ui/hud/ThreatRing.module.css */
 .ring {
   overflow: visible;
-  /* §36.2: grows relative to screen on mobile */
-  width: min(300px, 90vw);
-  height: min(300px, 90vw);
+  /*
+   * §36.2: grows relative to screen on mobile — but against the *smaller*
+   * viewport axis, not the width.
+   *
+   * `90vw` reads a 750 × 342 landscape phone as roomy and asks for the full
+   * 300 px on a screen 342 px tall, which left the ring taller than the band it
+   * lives in. `vmin` is the honest measure for a circle: it is the same on both
+   * axes, so the ring can never be larger than the screen's short side.
+   */
+  width: min(300px, 78vmin);
+  height: min(300px, 78vmin);
   pointer-events: none;
 }
 

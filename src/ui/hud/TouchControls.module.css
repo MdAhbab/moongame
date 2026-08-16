@@ -44,14 +44,14 @@
   will-change: transform;
 }
 
-/* ── Right thumb: throttle and altitude trim ────────────────────── */
+/* ── Right thumb: throttle ──────────────────────────────────────── */
 
 .throttleZone {
   position: absolute;
-  right: max(var(--safe-right), 18px);
-  bottom: max(var(--safe-bottom), 150px);
-  width: 92px;
-  height: 210px;
+  right: max(var(--safe-right), 14px);
+  bottom: max(var(--safe-bottom), 96px);
+  width: 74px;
+  height: 150px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -60,9 +60,9 @@
 }
 
 .throttleBase {
-  width: 54px;
-  height: 190px;
-  border-radius: 27px;
+  width: 46px;
+  height: 100%;
+  border-radius: 23px;
   border: var(--stroke-bold) solid var(--hairline-strong);
   background: var(--scrim);
   position: relative;
@@ -72,8 +72,8 @@
 }
 
 .throttleKnob {
-  width: 46px;
-  height: 46px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   background: rgb(var(--friendly-rgb) / 0.28);
   border: var(--stroke) solid var(--friendly);
@@ -83,9 +83,9 @@
 
 .throttleLabel {
   position: absolute;
-  bottom: 8px;
+  bottom: 6px;
   font-family: var(--font-hud);
-  font-size: var(--text-label);
+  font-size: 0.56rem;
   letter-spacing: var(--tracking-label);
   color: var(--text-secondary);
   pointer-events: none;
@@ -95,30 +95,34 @@
 
 .actionCluster {
   position: absolute;
-  right: max(var(--safe-right), 122px);
-  bottom: max(var(--safe-bottom), 34px);
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.leftActionCluster {
-  position: absolute;
-  left: max(var(--safe-left), 75px);
-  bottom: max(var(--safe-bottom), 34px);
+  right: max(var(--safe-right), 96px);
+  bottom: max(var(--safe-bottom), 22px);
   display: flex;
   gap: 10px;
   align-items: center;
 }
 
+/*
+ * The mode cluster sits bottom-left, over the outpost roster's lower edge.
+ * Column rather than row on short screens — see the landscape block below.
+ */
+.leftActionCluster {
+  position: absolute;
+  left: max(var(--safe-left), 14px);
+  bottom: max(var(--safe-bottom), 22px);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 .actionButton {
-  width: 62px;
-  height: 62px;
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
   border: var(--stroke-bold) solid var(--hairline-strong);
   background: var(--scrim);
   color: var(--text-primary);
-  font-size: 22px;
+  font-size: 20px;
   line-height: 1;
   display: grid;
   place-items: center;
@@ -133,104 +137,183 @@
 }
 
 .actionFire {
-  width: 78px;
-  height: 78px;
-  font-size: 28px;
+  width: 68px;
+  height: 68px;
+  font-size: 26px;
   border-color: var(--friendly);
   color: var(--friendly);
 }
 
+/*
+ * The two mode buttons are labelled, because a glyph alone cannot distinguish
+ * "cut the engine" from "change weapon" to someone meeting them mid-fight. The
+ * label is tiny and under the glyph rather than beside it, so the control stays
+ * a thumb-sized circle instead of a word-shaped slab.
+ */
+.modeButton {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: var(--stroke-bold) solid var(--hairline-strong);
+  background: var(--scrim);
+  color: var(--text-primary);
+  font-size: 17px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  gap: 1px;
+  touch-action: none;
+}
+
+.modeButton:active {
+  background: rgb(var(--friendly-rgb) / 0.22);
+  border-color: var(--friendly);
+}
+
+.modeText {
+  font-family: var(--font-hud);
+  font-size: 0.5rem;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+}
+
 .pauseButton {
   position: absolute;
-  top: max(var(--safe-top), 12px);
-  right: max(var(--safe-right), 12px);
-  width: 46px;
-  height: 46px;
+  top: max(var(--safe-top), 10px);
+  right: max(var(--safe-right), 10px);
+  width: 40px;
+  height: 40px;
   border-radius: var(--radius);
   border: var(--stroke) solid var(--hairline-strong);
   background: var(--scrim);
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 13px;
   display: grid;
   place-items: center;
 }
 
 /*
- * A phone in portrait has no room for a 210px throttle column beside a stick,
- * and the cluster would sit on top of the HUD. Shrink rather than hide: a
- * control the player cannot reach is worse than a small one.
+ * ── A phone in landscape ────────────────────────────────────────────
+ *
+ * This is the case that was broken, and it is a *height* problem rather than a
+ * width one — which is why the old `max-width: 520px` block never fired on the
+ * device that needed it. A phone held sideways is around 390 css px tall, and
+ * the throttle column alone used to claim 210 px of it plus a 150 px offset:
+ * 360 of 390, before a single button. Everything else had to overlap.
+ *
+ * So: shrink the column hard, tuck the clusters into the bottom corners, and
+ * stack the two mode buttons vertically so they stop reaching across the
+ * outpost roster.
  */
-@media (max-width: 520px) {
+@media (max-height: 520px) {
   .throttleZone {
-    height: 160px;
-    bottom: max(var(--safe-bottom), 130px);
+    height: 104px;
+    width: 60px;
+    bottom: max(var(--safe-bottom), 8px);
+    right: max(var(--safe-right), 8px);
   }
 
   .throttleBase {
-    height: 148px;
+    width: 40px;
+    border-radius: 20px;
+  }
+
+  .throttleKnob {
+    width: 32px;
+    height: 32px;
   }
 
   .actionCluster {
-    right: max(var(--safe-right), 108px);
-    gap: 9px;
+    right: max(var(--safe-right), 74px);
+    bottom: max(var(--safe-bottom), 8px);
+    gap: 7px;
   }
 
   .actionButton {
-    width: 54px;
-    height: 54px;
+    width: 44px;
+    height: 44px;
+    font-size: 17px;
   }
 
   .actionFire {
-    width: 66px;
-    height: 66px;
+    width: 54px;
+    height: 54px;
+    font-size: 21px;
+  }
+
+  /*
+   * Stays a row. A column here is 98 px tall, which reaches up through the
+   * band the HUD reserves for these controls and back into the boost and
+   * bomb-bay bars — the collision the reserved band exists to end.
+   */
+  .leftActionCluster {
+    left: max(var(--safe-left), 8px);
+    bottom: max(var(--safe-bottom), 8px);
+    gap: 6px;
+  }
+
+  .modeButton {
+    width: 40px;
+    height: 40px;
+    font-size: 13px;
+  }
+
+  .modeText {
+    font-size: 0.44rem;
+  }
+
+  .stickBase {
+    width: 76px;
+    height: 76px;
+  }
+
+  .stickKnob {
+    top: 17px;
+    left: 17px;
+    width: 42px;
+    height: 42px;
   }
 }
 
 /*
- * The slide rocker — horizontal only, springs back to centre.
- *
- * Sits on the left edge, above the floating stick's usual landing zone, so a
- * thumb can reach it without leaving the steering hand's territory. Narrow on
- * purpose: it is a two-state control with a proportional middle, not a stick.
+ * A narrow portrait phone. Width is the constraint here rather than height, so
+ * the cluster gets tighter but the throttle column keeps its travel — there is
+ * plenty of vertical room and a short throttle throw is harder to modulate.
  */
-.slideZone {
-  position: absolute;
-  left: 0;
-  bottom: calc(34% + env(safe-area-inset-bottom, 0px));
-  width: 132px;
-  height: 76px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  touch-action: none;
-}
+@media (max-width: 520px) and (min-height: 521px) {
+  .actionCluster {
+    right: max(var(--safe-right), 92px);
+    gap: 7px;
+  }
 
-.slideTrack {
-  position: relative;
-  width: 108px;
-  height: 42px;
-  border: var(--stroke) solid var(--hairline-strong);
-  border-radius: 21px;
-  background: rgb(var(--surface-raised-rgb, 12 18 28) / 0.35);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+  .actionButton {
+    width: 46px;
+    height: 46px;
+    font-size: 18px;
+  }
 
-.slideKnob {
-  position: absolute;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: rgb(var(--friendly-rgb) / 0.28);
-  border: var(--stroke) solid var(--friendly);
-  transition: transform 90ms var(--ease-out);
-}
+  .actionFire {
+    width: 56px;
+    height: 56px;
+    font-size: 22px;
+  }
 
-.slideLabel {
-  font-family: var(--font-hud);
-  font-size: 0.56rem;
-  letter-spacing: 0.12em;
-  color: var(--text-secondary);
-  pointer-events: none;
+  /*
+   * The mode buttons move *above* the action row rather than beside it.
+   *
+   * Seven buttons and a throttle column do not fit across 390 px: laid out in
+   * one row the two clusters literally overlapped, with DRIFT and WPN sitting
+   * under the bomb and fire buttons. Landscape solves this with width it
+   * actually has; portrait solves it with height, which is the axis it has
+   * spare. `PlayingScreen` reserves the taller band this needs.
+   */
+  .leftActionCluster {
+    bottom: max(var(--safe-bottom), 90px);
+    gap: 8px;
+  }
+
+  .modeButton {
+    width: 46px;
+    height: 46px;
+  }
 }
