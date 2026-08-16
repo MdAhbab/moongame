@@ -12,12 +12,15 @@ import { useState, useMemo } from 'react'
 import { useGameStore } from '../../state/useGameStore'
 import { useSettingsStore } from '../../state/useSettingsStore'
 import { Button } from '../components/ui'
+import { uiConfirm } from '../../audio/uiBus'
 import styles from './HangarScreen.module.css'
 import {
   SLOTS,
   PARTS_BY_SLOT,
   FIELD_LABELS,
   isBuff,
+  partCost,
+  partOwned,
   type Slot,
   type Part,
 } from '../../game/data/parts.ts'
@@ -170,13 +173,24 @@ export function HangarScreen(): React.JSX.Element {
       .filter(({ current, candidate }) => Math.abs(current - candidate) > 0.001)
   }, [currentResolved, candidateResolved])
 
+  /**
+   * Fits a part, buying it first if it is not owned.
+   *
+   * The purchase is a real transaction now. It was not: `part.cost` was
+   * `undefined` on all thirty parts, so `!part.cost` was always true, every part
+   * counted as owned, and the branch below was unreachable. `partCost` derives
+   * the price instead, so a part cannot ship unpriced.
+   *
+   * `spendCredits` is the authority on affordability, not the button's disabled
+   * state. The two can disagree — a wave settling in another tab, a stale render
+   * — and the store must never hand out a part it was not paid for.
+   */
   function handleEquip(part: Part): void {
-    const isOwned = !part.cost || unlockedParts.includes(part.id)
-    if (!isOwned) {
-      if (spendCredits(part.cost ?? 0)) {
-        unlockPart(part.id)
-        setEquippedPart(activeSlot, part.id)
-      }
+    if (!partOwned(part, unlockedParts)) {
+      if (!spendCredits(partCost(part))) return
+      unlockPart(part.id)
+      setEquippedPart(activeSlot, part.id)
+      uiConfirm()
       return
     }
 
@@ -506,8 +520,9 @@ export function HangarScreen(): React.JSX.Element {
               const isEquipped = part.id === equippedIdInSlot
               const isStock = part.manufacturer === null
               const isHovered = part.id === hoveredPartId
-              const isOwned = isStock || !part.cost || unlockedParts.includes(part.id)
-              const canAfford = credits >= (part.cost ?? 0)
+              const isOwned = partOwned(part, unlockedParts)
+              const price = partCost(part)
+              const canAfford = credits >= price
 
               return (
                 <div
@@ -518,14 +533,20 @@ export function HangarScreen(): React.JSX.Element {
                   onMouseLeave={() => setHoveredPartId(null)}
                   onFocus={() => setHoveredPartId(part.id)}
                   onBlur={() => setHoveredPartId(null)}
-                  onClick={() => isOwned && handleEquip(part)}
+                  onClick={() => { if (isOwned) handleEquip(part) }}
                   style={{ cursor: isOwned ? 'pointer' : 'default' }}
                 >
                   <div className={styles.partCardTop}>
                     <div className={styles.partName}>{part.name}</div>
-                    {part.tier && <span className={styles.tierBadge}>{part.tier}</span>}
                     {isEquipped && <span className={styles.equippedBadge}>EQUIPPED</span>}
                     {isStock && !isEquipped && <span className={styles.stockBadge}>STOCK</span>}
+                    {/* An owned part says so. Without it the only difference
+                        between "bought" and "buyable" was the presence of the
+                        buy button at the far end of the card, which is a long
+                        way from the name for a fact this important. */}
+                    {!isStock && isOwned && !isEquipped && (
+                      <span className={styles.ownedBadge}>OWNED</span>
+                    )}
                   </div>
                   {part.manufacturer && (
                     <div className={styles.partManufacturer}>{part.manufacturer}</div>
@@ -574,8 +595,18 @@ export function HangarScreen(): React.JSX.Element {
                         handleEquip(part)
                       }}
                       disabled={!canAfford}
+                      // Says what is missing, not merely that the button is off.
+                      // "BUY FOR 1,050 CR" greyed out leaves the player to do
+                      // the subtraction against a balance in the other panel.
+                      aria-label={
+                        canAfford
+                          ? `Buy ${part.name} for ${price.toLocaleString()} credits`
+                          : `${part.name} costs ${price.toLocaleString()} credits; ${(price - credits).toLocaleString()} more needed`
+                      }
                     >
-                      BUY FOR {part.cost} CR
+                      {canAfford
+                        ? `BUY · ${price.toLocaleString()} CR`
+                        : `NEED ${(price - credits).toLocaleString()} MORE CR`}
                     </button>
                   )}
                 </div>
@@ -593,6 +624,11 @@ export function HangarScreen(): React.JSX.Element {
                 <div className={styles.partCardTop}>
                   <div className={styles.partName}>{part.name}</div>
                   <span className={styles.lockedBadge}>LVL {part.unlockLevel}</span>
+                  {/* The price, while it is still out of reach. A player saving
+                      toward a part should be able to see what they are saving
+                      for; showing the number only once the level gate opens
+                      makes the credit balance meaningless until then. */}
+                  <span className={styles.priceBadge}>{partCost(part).toLocaleString()} CR</span>
                 </div>
                 {part.manufacturer && (
                   <div className={styles.partManufacturer}>{part.manufacturer}</div>

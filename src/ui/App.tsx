@@ -210,6 +210,15 @@ export function App(): React.JSX.Element {
   const worldId = useSettingsStore((s) => s.progress.worldId)
   const activeWorld = useMemo(() => worldById(worldId) ?? defaultWorld(), [worldId])
   const qualitySetting = useSettingsStore((s) => s.settings.display.quality)
+  /**
+   * §10.5 — read here and passed down, because the scene must not subscribe.
+   *
+   * The camera rig has accepted this since it was written; the render bridge
+   * passed a hardcoded `false` under a comment saying it "would come from
+   * settings". So the trauma shake — the most motion-sickness-inducing effect in
+   * the game — ignored the one setting that exists to turn it off.
+   */
+  const reducedMotion = useSettingsStore((s) => s.settings.accessibility.reducedMotion)
   const [tier, setTier] = useState<'High' | 'Medium' | 'Low'>(qualitySetting === 'high' ? 'High' : 'Low')
 
   useEffect(() => {
@@ -795,6 +804,7 @@ export function App(): React.JSX.Element {
                 skinId={skinId}
                 palette={activeWorld.palette}
                 starDensity={activeWorld.starDensity}
+                reducedMotion={reducedMotion}
                 advance={advanceSimulation}
               />
             </Suspense>

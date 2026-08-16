@@ -159,6 +159,7 @@ export function RenderBridge({
   palette,
   starDensity,
   stepping,
+  reducedMotion,
 }: {
   world: World
   tier: 'High' | 'Medium' | 'Low'
@@ -187,6 +188,20 @@ export function RenderBridge({
    * never sees them, and no gameplay value is derived from a colour. */
   palette: WorldPalette
   starDensity: number
+  /**
+   * §10.5 — the player has asked the system to stop moving things.
+   *
+   * Threaded in as a prop rather than read from the settings store here, so the
+   * render layer keeps its one subscription-free path: this changes when a
+   * player toggles a switch, which is a re-render the shell is already doing.
+   *
+   * `CameraRigController.update` has taken this parameter since it was written
+   * and the call site passed a hardcoded `false` under the comment "reducedMotion
+   * flag would come from settings". The trauma shake was therefore unconditional
+   * — the single most motion-sickness-inducing effect in the game, on the one
+   * setting that exists to disable it.
+   */
+  reducedMotion?: boolean | undefined
   /**
    * Whether the world may advance this frame.
    *
@@ -402,7 +417,7 @@ export function RenderBridge({
       world.craft.trauma,
       world.craft.slip,
       world.craft.boostActive,
-      false // reducedMotion flag would come from settings
+      reducedMotion === true,
     )
 
     // 4. Update Enemies

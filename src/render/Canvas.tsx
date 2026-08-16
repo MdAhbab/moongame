@@ -20,6 +20,8 @@ interface CanvasProps {
   onFrame?: ((alpha: number) => void) | undefined
   /** Whether the world may advance. Owned by the UI (see RenderBridge). */
   stepping?: boolean | undefined
+  /** §10.5 — suppresses camera trauma shake. */
+  reducedMotion?: boolean | undefined
   /** Selected craft livery. Cosmetic only — never reaches the simulation. */
   skinId?: string | undefined
   /** Advances the owning `Simulation` by a real delta; returns `alpha`. */
@@ -29,7 +31,7 @@ interface CanvasProps {
   starDensity: number
 }
 
-export function Canvas({ world, tier, albedoMap, normalMap, aoMap, onContextLost, onContextRestored, onFrame, stepping, skinId, advance, palette, starDensity }: CanvasProps) {
+export function Canvas({ world, tier, albedoMap, normalMap, aoMap, onContextLost, onContextRestored, onFrame, stepping, skinId, advance, palette, starDensity, reducedMotion }: CanvasProps) {
   // Repaint on selection. Runs before the first frame because the materials are
   // module singletons that exist as soon as the chunk loads, so there is no
   // window in which the craft is drawn in the wrong livery.
@@ -138,6 +140,7 @@ export function Canvas({ world, tier, albedoMap, normalMap, aoMap, onContextLost
         advance={advance}
         palette={palette}
         starDensity={starDensity}
+        reducedMotion={reducedMotion}
       />
     </R3FCanvas>
 

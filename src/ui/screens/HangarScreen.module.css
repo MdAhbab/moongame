@@ -338,7 +338,9 @@
 /* Badges */
 .equippedBadge,
 .stockBadge,
-.lockedBadge {
+.ownedBadge,
+.lockedBadge,
+.priceBadge {
   font-family: var(--font-hud);
   font-size: 11px; /* minimum needed for a badge pill — not body text */
   letter-spacing: var(--tracking-label);
@@ -365,6 +367,23 @@
   background: rgb(var(--hostile-rgb) / 0.12);
   color: var(--hostile);
   border: var(--stroke) solid rgb(var(--hostile-rgb) / 0.3);
+}
+
+/* Bought and in the locker. Deliberately quieter than EQUIPPED — owning a
+   part is a fact about the profile, fitting one is a decision about the run. */
+.ownedBadge {
+  background: rgb(var(--friendly-rgb) / 0.07);
+  color: var(--text-secondary);
+  border: var(--stroke) solid rgb(var(--friendly-rgb) / 0.22);
+}
+
+/* The price on a part that is still level-locked, so a player can save toward
+   something they can see rather than being told the number only once it is
+   already reachable. */
+.priceBadge {
+  background: rgb(var(--caution-rgb) / 0.1);
+  color: var(--caution);
+  border: var(--stroke) solid rgb(var(--caution-rgb) / 0.28);
 }
 
 .partManufacturer {

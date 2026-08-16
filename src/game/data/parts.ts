@@ -55,13 +55,66 @@ export interface Part {
   readonly manufacturer: Manufacturer | null
   /** Pilot level at which this becomes equippable. 1 for stock. */
   readonly unlockLevel: number
-  /** Purchase cost in credits (0 for stock). */
-  readonly cost?: number
-  /** Grade tier from Mk.I up to Mk.IV. */
-  readonly tier?: 'Mk.I' | 'Mk.II' | 'Mk.III' | 'Mk.IV'
   /** One line of in-world flavour. Shown under the name in the Hangar. */
   readonly description: string
   readonly modifiers: PartModifiers
+}
+
+/* ------------------------------------------------------------------ */
+/* What a part costs                                                   */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The purchase price of a part, in credits.
+ *
+ * **Derived, not declared, and that is the whole point.** `Part` used to carry
+ * an optional `cost?: number` field, and not one of the thirty parts ever set
+ * it. Every consumer therefore read `undefined`, `part.cost ?? 0` resolved to
+ * zero, `spendCredits(0)` always succeeded, and the Hangar's purchase branch was
+ * unreachable code guarding a free transaction. Credits accumulated for twelve
+ * waves with nothing in the game to spend them on.
+ *
+ * An optional field is an invitation to forget it, and thirty declarations is
+ * thirty chances to. A function over `unlockLevel` cannot be forgotten by a part
+ * that does not exist yet: add one, and it is priced.
+ *
+ * ## The curve, and what it is priced against
+ *
+ * A well-played twelve-wave campaign pays roughly 15,000 credits — about 4,800
+ * from sector revenue at `CREDITS_PER_OUTPOST_PERCENT` and the rest in bounties.
+ * At this curve that is five or six parts out of twenty-four, so a single run
+ * kits out most of one build and no run kits out all of them. Choosing *which*
+ * slots to spend on is the decision, which is the same decision the parts
+ * themselves pose — every one carries a real nerf alongside its buff, so the
+ * question is never "can I afford the good one".
+ *
+ * Priced off `unlockLevel` rather than off the modifiers, because no part is
+ * strictly better than another and pricing by power would imply otherwise. What
+ * a later part costs more for is *lateness*: it is a further-out choice, not a
+ * stronger one.
+ *
+ * Rounded to 25 so prices read as prices rather than as the output of a formula.
+ */
+const PART_COST_BASE = 400
+const PART_COST_PER_LEVEL = 110
+
+export function partCost(part: Part): number {
+  // Stock is slot 0 of every slot and is always free: a fresh profile has to be
+  // able to fly the balanced game, which is the invariant `balance.test.ts`
+  // exists to hold.
+  if (part.manufacturer === null) return 0
+  return Math.round((PART_COST_BASE + part.unlockLevel * PART_COST_PER_LEVEL) / 25) * 25
+}
+
+/**
+ * Whether the player owns this part outright.
+ *
+ * Stock is owned by everyone, forever. Everything else has to be bought, and
+ * being *unlocked by level* is not the same as owning it — the level gate says
+ * a part is available to buy, the purchase says it is yours.
+ */
+export function partOwned(part: Part, unlockedParts: readonly string[]): boolean {
+  return part.manufacturer === null || unlockedParts.includes(part.id)
 }
 
 export interface SetBonus {
