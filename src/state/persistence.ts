@@ -21,7 +21,7 @@ import { warn } from '../debug/logger.ts'
  * The schema version. Bumping it requires a migration branch in `loadData`,
  * not a reset — see the comment there.
  */
-export const CURRENT_VERSION = 7
+export const CURRENT_VERSION = 8 as const
 
 /**
  * The rebindable actions.
@@ -69,7 +69,11 @@ export interface Settings {
     music: number
   }
   display: {
-    quality: 'low' | 'high'
+    /**
+     * `'auto'` lets `qualityTier.ts` pick from the device; the other two are the
+     * player overriding it, and an override is never second-guessed.
+     */
+    quality: 'auto' | 'low' | 'high'
     hudScale: number
     colorMode: 'default' | 'high-contrast'
   }
@@ -143,17 +147,17 @@ export interface Progress {
 }
 
 export interface PersistedData {
-  version: 7
+  version: 8
   settings: Settings
   progress: Progress
   keybinds: Record<Action, BindingList>
 }
 
 export const defaultData: PersistedData = {
-  version: 7,
+  version: 8,
   settings: {
     audio: { master: 100, sfx: 100, ui: 100, music: 100 },
-    display: { quality: 'high', hudScale: 100, colorMode: 'default' },
+    display: { quality: 'auto', hudScale: 100, colorMode: 'default' },
     controls: {
       autoFire: false,
       toggleFire: false,
@@ -382,7 +386,7 @@ export function parseSettings(value: unknown): Settings {
       ui: num(audio.ui, 0, 100, d.audio.ui),
     },
     display: {
-      quality: choice(display.quality, ['low', 'high'] as const, d.display.quality),
+      quality: choice(display.quality, ['auto', 'low', 'high'] as const, d.display.quality),
       hudScale: num(display.hudScale, 75, 150, d.display.hudScale),
       colorMode: choice(display.colorMode, ['default', 'high-contrast'] as const, d.display.colorMode),
     },
@@ -597,6 +601,23 @@ export function loadData(): PersistedData {
     settings: parseSettings(parsed.settings),
     progress: parseProgress(parsed.progress),
     keybinds: parseKeybinds(parsed.keybinds, version),
+  }
+
+  /*
+   * v7 → v8 — `display.quality` gained `'auto'`, and it is the new default.
+   *
+   * Every v7 save carries `'high'`, and for almost all of them that is not a
+   * choice: it was the shipped default and there was no device detection behind
+   * it, so a phone stored `'high'` and then ran the game at 1.4 fps. Carrying
+   * that value forward verbatim would migrate the bug along with the save.
+   *
+   * So `'high'` from a v7 payload is re-read as "never chosen" and becomes
+   * `'auto'`. A stored `'low'` is left alone, because that one *is* a choice —
+   * it could only have come from a player turning the toggle off. Desktop loses
+   * nothing either way: detection returns High on desktop hardware.
+   */
+  if (version < 8 && data.settings.display.quality === 'high') {
+    data.settings = { ...data.settings, display: { ...data.settings.display, quality: 'auto' } }
   }
 
   // Persist the upgraded shape immediately, so the next load is a plain v3 read

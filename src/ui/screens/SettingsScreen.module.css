@@ -146,3 +146,62 @@
   font-size: var(--text-label);
   line-height: 1.45;
 }
+
+/* ── Graphics quality: a three-way choice, not a toggle ─────────────
+   Auto exists because the setting used to be a boolean defaulted to on,
+   with nothing looking at the hardware — which put every phone on High
+   tier at a measured 1.4 fps. */
+.qualityRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: var(--stroke) solid var(--hairline);
+}
+
+.qualityLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.qualityHint {
+  color: var(--text-secondary);
+  font-size: var(--text-label);
+  line-height: 1.45;
+}
+
+.qualityChoices {
+  display: flex;
+  flex-shrink: 0;
+  border: var(--stroke) solid var(--hairline-strong);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.qualityChoice {
+  font-family: var(--font-hud);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  /* 44 px is the minimum touch target (§35), and this control is most likely to
+     be used on exactly the device that needs it. */
+  min-width: 56px;
+  min-height: 44px;
+  padding: 0 12px;
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+  border-left: var(--stroke) solid var(--hairline);
+  cursor: pointer;
+}
+
+.qualityChoice:first-child {
+  border-left: none;
+}
+
+.qualityChoiceActive {
+  background: rgb(var(--friendly-rgb) / 0.16);
+  color: var(--friendly);
+}

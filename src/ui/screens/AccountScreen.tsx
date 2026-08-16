@@ -28,6 +28,7 @@ import {
   type SaveResponse,
   type PutSaveResult,
 } from '../../net/apiClient.ts'
+import { CURRENT_VERSION } from '../../state/persistence.ts'
 
 /**
  * `unavailable` is distinct from `unauthenticated` on purpose. A static build
@@ -195,7 +196,10 @@ export function AccountScreen(): React.JSX.Element {
     if (!account) return
     setSyncState('syncing')
     const currentData = {
-      version: 7 as const,
+      // From the constant, not a literal. A hardcoded version here silently
+      // stops compiling — or worse, uploads a payload labelled with the wrong
+      // schema — every time the schema moves.
+      version: CURRENT_VERSION,
       settings,
       progress,
       keybinds,

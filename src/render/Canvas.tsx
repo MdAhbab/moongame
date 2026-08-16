@@ -1,5 +1,5 @@
 import { Canvas as R3FCanvas } from '@react-three/fiber'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { registry } from './disposal.ts'
 import { RenderBridge } from './RenderBridge.tsx'
@@ -61,10 +61,34 @@ export function Canvas({ world, tier, albedoMap, normalMap, aoMap, onContextLost
     }
   }, [])
 
-  // DPR based on tier
-  const dpr = tier === 'High' ? Math.min(window.devicePixelRatio, 2.0) 
-            : tier === 'Medium' ? Math.min(window.devicePixelRatio, 1.5) 
-            : 1.0
+  /**
+   * Backbuffer scale, capped by tier *and* by absolute pixel count.
+   *
+   * The tier cap alone is a ratio, and a ratio does not know how big the screen
+   * is. A modern phone reports `devicePixelRatio` 2.625 on a 412-CSS-pixel
+   * display, so High tier's `min(dpr, 2.0)` asked for 824 × 1678 — 1.38
+   * megapixels of backbuffer, then a full-resolution bloom and god-ray pass on
+   * top of it, on a mobile GPU. Measured: 1.4 fps.
+   *
+   * The pixel ceiling is what stops that being expressible. Fill cost scales
+   * with area, not with a ratio, so the thing worth bounding is area. 2.1 Mpx is
+   * a little over 1080p and the point past which the composer stops being
+   * affordable on anything but a discrete GPU; the ceiling only ever *lowers*
+   * the tier's own cap, so a desktop at 1080p is untouched by it.
+   */
+  const dpr = useMemo(() => {
+    const byTier = tier === 'High' ? 2.0 : tier === 'Medium' ? 1.5 : 1.0
+    const requested = Math.min(window.devicePixelRatio || 1, byTier)
+
+    const MAX_PIXELS = 2_100_000
+    const cssPixels = Math.max(1, window.innerWidth * window.innerHeight)
+    const byArea = Math.sqrt(MAX_PIXELS / cssPixels)
+
+    // Never below 1: dropping under one device pixel per CSS pixel is visibly
+    // soft, and at that point the answer is a cheaper tier rather than a
+    // blurrier one.
+    return Math.max(1, Math.min(requested, byArea))
+  }, [tier])
 
   return (
     <>

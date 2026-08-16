@@ -197,7 +197,7 @@ thing is built against.
 
 ## The story behind the build
 
-**→ [`docs/STORY.md`](docs/STORY.md)** — what inspired the game, how it was built,
+**→ [`STORY.md`](STORY.md)** — what inspired the game, how it was built,
 the challenges along the way, and what I learned, with the actual maths behind the
 flight model, the guidance law, the continuous collision test and the outpost
 lattice.

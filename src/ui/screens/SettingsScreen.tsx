@@ -171,12 +171,37 @@ export function SettingsScreen() {
         return (
           <div className={styles.tabContent}>
             <div className={styles.keybindsList}>
-              <Toggle
-                label="High Quality Graphics"
-                description="Disable to reduce draw calls and post-processing"
-                value={settings.display.quality === 'high'}
-                onChange={(v) => updateSettings((s) => ({ ...s, display: { ...s.display, quality: v ? 'high' : 'low' } }))}
-              />
+              {/* Three states, not a toggle.
+                  A toggle cannot express "let the game decide", and the absence
+                  of that option is what shipped every phone on High tier — the
+                  setting defaulted to on, nothing looked at the hardware, and
+                  the result was measured at 1.4 fps. Auto is the default and
+                  the other two are the player overruling it. */}
+              <div className={styles.qualityRow}>
+                <div className={styles.qualityLabel}>
+                  <span>Graphics Quality</span>
+                  <span className={styles.qualityHint}>
+                    Auto picks from your device. High adds bloom, god rays and sharper shadows —
+                    heavy on phones.
+                  </span>
+                </div>
+                <div className={styles.qualityChoices} role="radiogroup" aria-label="Graphics quality">
+                  {(['auto', 'low', 'high'] as const).map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      role="radio"
+                      aria-checked={settings.display.quality === option}
+                      className={`${styles.qualityChoice} ${settings.display.quality === option ? styles.qualityChoiceActive : ''}`}
+                      onClick={() => {
+                        updateSettings((st) => ({ ...st, display: { ...st.display, quality: option } }))
+                      }}
+                    >
+                      {option === 'auto' ? 'Auto' : option === 'low' ? 'Low' : 'High'}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <Toggle
                 label="High Contrast HUD"
                 description="Thicker lines, explicit outlines, higher opacity"

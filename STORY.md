@@ -1,6 +1,6 @@
 # Mare Noctis — the story behind the build
 
-> **[Play it](https://mare-noctis.vercel.app)** · [Source](https://github.com/MdAhbab/moongame) · [Architecture](ARCHITECTURE.md) · [Design doc](gameplan.md)
+> **[Play it](https://mare-noctis.vercel.app)** · [Source](https://github.com/MdAhbab/moongame) · [Architecture](docs/ARCHITECTURE.md) · [Design doc](docs/gameplan.md)
 
 ---
 

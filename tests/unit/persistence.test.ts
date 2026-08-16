@@ -27,7 +27,7 @@ Object.defineProperty(globalThis, 'localStorage', {
   },
 })
 
-const { defaultKeybinds, loadData, MAX_BINDINGS_PER_ACTION } = await import('@/state/persistence')
+const { defaultKeybinds, defaultData, loadData, MAX_BINDINGS_PER_ACTION } = await import('@/state/persistence')
 const { bindingRejection } = await import('@/platform/keys')
 
 function write(payload: unknown): void {
@@ -151,6 +151,37 @@ describe('a v4 save keeps what the player chose', () => {
     expect(data.keybinds.brake).toEqual(defaultKeybinds().brake)
     // A non-movement action from the same save is preserved as always.
     expect(data.keybinds.map[0]).toBe('KeyN')
+  })
+})
+
+describe('a v7 save stops forcing High tier on every device', () => {
+  it('re-reads a v7 "high" as "auto", because it was never a choice', () => {
+    // v7 shipped `quality: 'high'` as the default with no device detection
+    // behind it, so a phone stored 'high' and then ran the game at 1.4 fps.
+    // Carrying the value forward verbatim would migrate the bug with the save.
+    write({ version: 7, settings: { display: { quality: 'high' } }, progress: { bestScore: 4200 } })
+
+    const data = loadData()
+    expect(data.settings.display.quality).toBe('auto')
+    // …and takes nothing else with it.
+    expect(data.progress.bestScore).toBe(4200)
+  })
+
+  it('leaves a v7 "low" alone, because that one only comes from a player', () => {
+    // 'low' could only have been written by someone turning the toggle off.
+    write({ version: 7, settings: { display: { quality: 'low' } } })
+    expect(loadData().settings.display.quality).toBe('low')
+  })
+
+  it('keeps an explicit "high" once the schema is already v8', () => {
+    // At v8 the value is a real choice — Auto exists to be picked instead — so
+    // the migration must not keep rewriting it on every load.
+    write({ version: 8, settings: { display: { quality: 'high' } } })
+    expect(loadData().settings.display.quality).toBe('high')
+  })
+
+  it('defaults a fresh profile to auto', () => {
+    expect(defaultData.settings.display.quality).toBe('auto')
   })
 })
 

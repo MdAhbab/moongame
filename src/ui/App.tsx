@@ -56,6 +56,7 @@ import { encodeReplay } from '../game/core/InputRecorder.ts'
 import { cloudAvailable, getAccount, submitScore } from '../net/apiClient.ts'
 import { AudioDirector } from '../audio/index.ts'
 import { registerUiAudio } from '../audio/uiBus.ts'
+import { resolveInitialTier, type QualityTier } from '../render/qualityTier.ts'
 
 /** §32.2 — event-driven state syncs at 10 Hz. Per-frame values never come here. */
 const META_SYNC_INTERVAL = 0.1
@@ -69,6 +70,27 @@ const META_SYNC_INTERVAL = 0.1
  * the game look worse on hardware that was coping.
  */
 const FRAME_BUDGET_MS = 33.3
+
+/**
+ * A frame so slow that waiting for statistics is itself the bug (§17.6).
+ *
+ * 120 ms is under 9 fps — long past "stuttering" and into "the input the player
+ * just gave will be acted on next week". The windowed p95 test below is the
+ * right instrument for marginal stutter and completely the wrong one here: at
+ * the 1.4 fps a phone was measured at on High tier, a 180-frame window takes
+ * over two minutes to fill, and filling it drops exactly one tier.
+ *
+ * So anything this far out of budget skips the statistics entirely.
+ */
+const FRAME_EMERGENCY_MS = 120
+
+/**
+ * Consecutive emergency frames before dropping. Small, because the whole point
+ * is speed — but not one, because the first frame after a tab regains focus,
+ * a shader compiles or a wave spawns in is legitimately slow and recovers on
+ * its own. Three in a row is a device that cannot draw this scene.
+ */
+const FRAME_EMERGENCY_STREAK = 3
 
 /** How long a transient toast stays up before dismissing itself. */
 const TOAST_DURATION_MS = 5000
@@ -214,10 +236,23 @@ export function App(): React.JSX.Element {
    * the game — ignored the one setting that exists to turn it off.
    */
   const reducedMotion = useSettingsStore((s) => s.settings.accessibility.reducedMotion)
-  const [tier, setTier] = useState<'High' | 'Medium' | 'Low'>(qualitySetting === 'high' ? 'High' : 'Low')
+  /**
+   * The starting quality tier (§17.6).
+   *
+   * `resolveInitialTier` is where the device gets a say. It used to be
+   * `qualitySetting === 'high' ? 'High' : 'Low'` against a setting that shipped
+   * defaulted to `'high'`, so **every device started on High** — and High on a
+   * phone was measured at 1.4 fps against Low's 30 on the same handset, with no
+   * CPU throttling involved. That is fill rate: a 1.38-megapixel backbuffer, a
+   * full-resolution bloom, god rays and a 2048² shadow map.
+   *
+   * Computed lazily so the WebGL probe inside detection runs once, at mount,
+   * rather than on every render of this component.
+   */
+  const [tier, setTier] = useState<QualityTier>(() => resolveInitialTier(qualitySetting))
 
   useEffect(() => {
-    setTier(qualitySetting === 'high' ? 'High' : 'Low')
+    setTier(resolveInitialTier(qualitySetting))
   }, [qualitySetting])
 
   const monitorRef = useRef<FrameTimeMonitor | null>(null)
@@ -225,6 +260,16 @@ export function App(): React.JSX.Element {
     monitorRef.current = new FrameTimeMonitor(180)
   }
   const monitor = monitorRef.current
+  /**
+   * Consecutive frames over `FRAME_EMERGENCY_MS`, for the fast path below.
+   *
+   * The 180-frame window is the right instrument for *marginal* stutter and the
+   * wrong one for a device that cannot draw the scene at all: at 1.4 fps a
+   * window takes over two minutes to fill, and it drops one tier when it does.
+   * Reaching Low from High that way is four minutes of slideshow, which is
+   * several minutes after the player has closed the tab.
+   */
+  const emergencyRef = useRef(0)
   const lastFrameTimeRef = useRef<number>(0)
   const mapWasOpenRef = useRef(false)
 
@@ -614,10 +659,27 @@ export function App(): React.JSX.Element {
       // heat out of it. Gated on p95 rather than the mean because a mean hides
       // exactly the stutter the player feels, and on a full window so a single
       // slow frame during wave spawn-in cannot trigger it.
-      if (screen === 'Playing') {
+      if (screen === 'Playing' && tier !== 'Low') {
+        // Fast path: catastrophically slow frames drop straight to Low rather
+        // than stepping down one tier per window. A device drawing at 1.4 fps
+        // is not going to be rescued by Medium, and making it prove that
+        // through another two-minute window is the difference between a game
+        // that recovers in half a second and one the player has already left.
+        if (frameMs > FRAME_EMERGENCY_MS) {
+          emergencyRef.current++
+          if (emergencyRef.current >= FRAME_EMERGENCY_STREAK) {
+            emergencyRef.current = 0
+            monitor.reset()
+            setTier('Low')
+            setToast({ tone: 'warning', message: 'Frame rate is very low — graphics reduced to Low.' })
+          }
+        } else {
+          emergencyRef.current = 0
+        }
+
         monitor.push(frameMs)
         if (monitor.full) {
-          if (monitor.p95 > FRAME_BUDGET_MS && tier !== 'Low') {
+          if (monitor.p95 > FRAME_BUDGET_MS) {
             const next = tier === 'High' ? 'Medium' : 'Low'
             setTier(next)
             setToast({ tone: 'warning', message: `Frame rate is low — graphics reduced to ${next}.` })
