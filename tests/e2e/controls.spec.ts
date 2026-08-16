@@ -35,6 +35,8 @@
  */
 import { expect, test, type Page } from '@playwright/test'
 
+import { CURRENT_VERSION } from '../../src/state/persistence'
+
 /** Mirrors `V_CRUISE = √(F_CRUISE / K_DRAG)` = √(88 / 0.13). */
 const V_CRUISE = 26.02
 
@@ -252,7 +254,11 @@ test('rebinding a control persists and takes effect', async ({ page }) => {
     const raw = localStorage.getItem('mare_noctis_v2')
     return raw === null ? null : (JSON.parse(raw) as { version: number; keybinds: Record<string, string[]> })
   })
-  expect(stored?.version).toBe(7)
+  // Against `CURRENT_VERSION` rather than a literal. What this line means is
+  // "the rebind was written at the live schema version", and a hardcoded number
+  // says something narrower that goes stale on the next migration — as it did,
+  // silently, when v8 landed.
+  expect(stored?.version).toBe(CURRENT_VERSION)
   expect(stored?.keybinds.boost?.[0]).toBe('KeyQ')
   // The alternate survives a rebind of the primary — the chorded arrow, since
   // v7 moved the mirrored set from WASD onto the arrows.
@@ -305,7 +311,9 @@ test('a version 2 save is migrated rather than discarded', async ({ page }) => {
     })
   })
 
-  expect(after?.version).toBe(7)
+  // The point of the test is that a v2 save is *carried forward to whatever the
+  // current schema is*, not that it lands on one particular number.
+  expect(after?.version).toBe(CURRENT_VERSION)
   // Everything the player earned survives.
   expect(after?.progress.bestScore).toBe(123456)
   expect(after?.progress.pilotXp).toBe(7777)
