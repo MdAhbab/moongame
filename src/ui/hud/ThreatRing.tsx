@@ -68,15 +68,23 @@ function Glyph({ kind }: { kind: MarkerKind }) {
     case 'Warden': // bar inside a ring: it blocks, from every direction
       return (
         <g>
-          <circle cx={0} cy={0} r={5.4} {...common} strokeDasharray="2.2 1.6" />
-          <rect x={-2.8} y={-1.2} width={5.6} height={2.4} {...common} />
+          {/* r=4.4, not 5.4. At 5.4 the ring's outer edge sat 0.5 units — about
+              0.9 px on a 300 px HUD ring — inside the urgency halo at r=7, so
+              the two strokes merged into one blurred band and the Warden became
+              the only archetype whose threatened and critical states were
+              illegible. The dash is longer too: at the old spacing the gaps
+              closed up at HUD scale and read as a solid circle. */}
+          <circle cx={0} cy={0} r={4.4} {...common} strokeDasharray="2.8 1.9" />
+          <rect x={-2.2} y={-1.1} width={4.4} height={2.2} {...common} />
         </g>
       )
     case 'Carrier': // filled chevron with a bar under it: a Harvester, and more coming
       return (
         <g>
-          <path d="M -6 1 L 0 -5 L 6 1 Z" {...common} fill="currentColor" fillOpacity={0.75} />
-          <path d="M -4 4 L 4 4" {...common} />
+          {/* Pulled in from 6.0 for the same reason as the Warden's ring: the
+              halo sits at r=7 and a glyph reaching 6.1 leaves no visual gap. */}
+          <path d="M -5.2 0.8 L 0 -4.4 L 5.2 0.8 Z" {...common} fill="currentColor" fillOpacity={0.75} />
+          <path d="M -3.4 3.6 L 3.4 3.6" {...common} />
         </g>
       )
     case 'Outpost': // hexagon

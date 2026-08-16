@@ -1,10 +1,16 @@
 # 2D art brief — generation prompts
 
-> **Status: delivered and placed (2026-08-11).** All eight images were generated
-> and are live. Full-resolution originals are in `art-source/` (outside
+> **Status: Sets A–C delivered and placed (2026-08-11).** All eight images were
+> generated and are live. Full-resolution originals are in `art-source/` (outside
 > `public/`, git-ignored); the shipped derivatives are listed in
 > `docs/CREDITS-ASSETS.md`. The prompts below are kept so any slot can be
 > regenerated in the same style.
+>
+> **Set D is outstanding (added 2026-08-16).** Three late archetypes shipped and
+> the Briefing renders a card for each with no art behind it. Nothing is broken —
+> the card falls back to its `silhouette` line, by design — but three of the six
+> threat cards currently carry a picture and three do not, which reads as an
+> oversight rather than as a style.
 
 
 Every slot below is **already wired in code** and **already optional**: each
@@ -63,6 +69,31 @@ thin + pointed. Sentinel = flat slab + shield face.
 
 ---
 
+## Set D — Threat cards, the late archetypes (3 files) · `public/enemies/`
+
+Same slot, same size, same rules as Set A, and the **same §35.1 constraint** —
+except that it is harder now, because these three have to be distinguishable
+from the first three as well as from each other. Six outlines at 40 px is the
+actual bar. Two collisions to watch for specifically:
+
+- **Sapper vs Interceptor.** Both are small and pointed. The Sapper's wings rake
+  *forward*, it has no cockpit and no visible engine, and it is noticeably
+  smaller in frame. If the two read alike at 40 px, regenerate the Sapper.
+- **Carrier vs Sentinel.** Both are slabs. The Carrier is far larger in frame and
+  its underside is *open* — the bay is the identifying feature and must be
+  visible in the silhouette, not just in the shading.
+
+| File | Prompt |
+|---|---|
+| `sapper.png` | *[house style]* Three-quarter view of a **small forward-swept wedge** — a compact one-way strike drone, no cockpit, no canopy, no visible engine nozzle. Wings rake *forward* from the tail toward the nose, the opposite of a conventional fighter. Dark charcoal hull, a single hard amber `#FF8A3D` line running the length of the spine and terminating in a bright charge point at the nose. Reads as committed and disposable, not as a fighter. Smaller in frame than the other cards: fills ~60%, centred, isolated on black. |
+| `warden.png` | *[house style]* Front three-quarter view of a **three-armed ring mounted on a slim vertical column** — a hovering support platform. Three equally spaced arms radiate from a central hub to a thin outer ring; a faint amber `#FF8A3D` field shimmer arcs *between* the arms, suggesting a sphere rather than drawing one. Skeletal and open, mostly negative space. No wings, no legs, no gun. Centred, isolated on black, filling ~80% of the frame. |
+| `carrier.png` | *[house style]* Low three-quarter view looking **up** at a **broad slab hull** with a large **open launch bay in its underside**, the bay recessed and lit from within by amber `#FF8A3D`. Massive, industrial, unarmed — no turrets, no gun ports. The open underside must be unmistakable in outline. The largest thing in the set: fills ~90% of the frame, centred, isolated on black. |
+
+**The silhouette test, extended:** Sapper = small wedge, swept the wrong way.
+Warden = ring on a column. Carrier = big slab with a hole in it.
+
+---
+
 ## Set B — Tutorial beats (3 files) · `public/tutorial/`
 
 Shown at **96 × 96 px** with a 2 px corner radius on a `#05060A` panel, beside
@@ -102,10 +133,13 @@ full-bleed and the current square crops badly on wide screens.
 
 ```
 public/
-├── enemies/          ← create this folder
+├── enemies/
 │   ├── harvester.png
 │   ├── interceptor.png
-│   └── sentinel.png
+│   ├── sentinel.png
+│   ├── sapper.png       ← Set D, outstanding
+│   ├── warden.png       ← Set D, outstanding
+│   └── carrier.png      ← Set D, outstanding
 ├── tutorial/
 │   ├── beat-fly.png
 │   ├── beat-shoot.png

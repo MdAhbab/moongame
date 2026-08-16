@@ -529,7 +529,11 @@ export class AudioDirector {
     if (live && anyCritical && !this.wasCritical) {
       this.caption('[Outpost integrity critical]')
     }
-    this.wasCritical = live && anyCritical
+    // Latched on the *fact*, not on `live && fact`. Clearing it while the world
+    // is frozen means every resume from a pause or a wave-clear re-announces a
+    // condition that has not changed — the caption is for the transition, and a
+    // menu is not a transition.
+    this.wasCritical = anyCritical
 
     const THREAT_LAMBDA = 0.5 // ~1.4s half-life
     this.tension = damp(this.tension, this.targetTension, THREAT_LAMBDA, dt)

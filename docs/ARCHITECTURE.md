@@ -53,7 +53,7 @@ or persisted.
 - **No allocation in the frame path.** Structure-of-arrays over typed arrays,
   pooled entities, module-scoped scratch vectors.
 
-This is why the simulation can run in Node, why 149 tests exercise it headlessly,
+This is why the simulation can run in Node, why 327 tests exercise it headlessly,
 and why a server can replay a run to verify a leaderboard score.
 
 ### `src/platform/**` — device input
@@ -78,6 +78,14 @@ R3F over three. **Exactly one `useFrame` in the whole tree**, in
 calls back into the shell. A second `useFrame` or a stray `requestAnimationFrame`
 is two clocks, which is a named failure mode.
 
+That sentence was aspirational until August 2026 — `Sun.tsx` owned a second one
+the whole time (see below). It is now literally true, and everything else that
+needs per-frame work is **driven imperatively from the bridge**: the camera rig,
+the sun, the moon's LOD and post-processing are stepped through an `update()` or
+through refs the bridge writes, and hold no hooks of their own. A file under
+`src/render/` that imports `useFrame` is the bug, not the exception — and
+nothing asserts that, which is why it was false for months.
+
 May import from `src/game/core/`, `src/game/data/` and `src/game/math/`. May
 **not** import from `src/game/systems/` — lint-enforced. Reading
 `world.craft.position` is correct; writing it is a bug.
@@ -91,6 +99,22 @@ The audio counterpart of the render bridge: world state and the event queue in,
 sound out. Reads, never mutates — and in particular **never calls
 `events.clear()`**, because the simulation drains that queue once every consumer
 has read it.
+
+`update(world, dt, live)` takes the shell's `stepping` flag, **not the phase**.
+Two different questions hide in "is the player flying": *is this a run*, which
+`world.phase` can answer, and *is the world moving*, which it cannot. Conflating
+them shipped: the frame callback runs on every screen that mounts the canvas, so
+on WaveClear, Paused, Debrief and Results the continuous voices went on reading a
+frozen craft — an engine roar held at the last cruise velocity, a lock droning on
+one pitch mid-acquisition, the alarm stem pinned because integrity had stopped
+falling. Nothing decayed because nothing was moving to decay it. A frozen world
+now gets silence from every state-driven voice. `reset()` runs on Title, which is
+where a run is actually torn down.
+
+The four UI sounds reach the director through `uiBus.ts` — a module-level slot
+armed once from the shared `Button`, deliberately not a React context, because
+`Button` also renders inside the HUD and a context read is a subscription, which
+invariant 1 forbids outright.
 
 **The game is fully playable muted.** `AudioDirector.ts`'s header carries a
 row-by-row proof: every sound names the visual channel carrying the same fact.
@@ -130,6 +154,13 @@ through refs (`src/state/hudRefs.ts`). Event-driven values reach zustand at
 *Why:* the HUD has a hull gauge, a heat gauge, an altitude ladder, a speed
 readout, a combo meter and up to 32 threat markers. Routing those through React
 at 60 Hz re-renders the tree sixty times a second to move some text.
+
+**The boundary is the canvas, not the phase.** `WaveClearScreen` sat outside
+`Playing` and ran five concurrent rAF loops, each calling `setState` per tick —
+roughly three hundred renders a second, over a scene still drawing at full DPR
+behind a translucent overlay. That is the "it crashes between waves" report: the
+tab had no idle time left to service input. One driver writes those counters
+straight to DOM nodes now, exactly as `hudRefs` does.
 
 ### 2. Fixed timestep, interpolated render
 
@@ -181,6 +212,33 @@ Each of these passed every unit test in the repository:
   session was worth exactly one run.
 - **`CameraRig.tsx` hardcoded every camera constant**, so seven values in
   `constants.ts` were read by nothing and tuning them did nothing.
+- **`Sun.tsx` owned the second `useFrame`** — for as long as the rule against a
+  second `useFrame` had been written down. It wrote `uTime` from
+  `clock.getElapsedTime()` while the bridge wrote the *same two uniforms* from
+  `world.time`: two loops, two time bases, one value, and whichever subscriber
+  R3F happened to invoke last won the frame. The clocks are not merely
+  duplicates — one is wall-clock and monotonic from context creation, the other
+  advances only while the world steps and resets with a run — so the corona
+  sampled its noise field across two unrelated timelines and jumped by minutes
+  the moment a run began. There is still no lint rule and no test that counts
+  them: a rule stated only in prose is a rule that can be false for months.
+- **Thirty ship parts shipped with no price.** `Part` carried an optional
+  `cost?: number` and not one of the thirty set it, so `part.cost ?? 0` was zero
+  everywhere, `!part.cost` was always true, every part read as owned,
+  `spendCredits(0)` always succeeded, and the Hangar's purchase branch was
+  unreachable code guarding a free transaction. Credits were earned correctly for
+  twelve waves against a price list that did not exist. The field is gone;
+  `partCost(part)` derives the price from `unlockLevel`, because an optional
+  field is an invitation to forget it and thirty declarations are thirty chances
+  to.
+- **Three finished features that nothing called.** `AudioDirector.reset()`
+  promised in its own docstring to run on "run restarts and hard screen changes";
+  `uiClick`/`uiHover`/`uiConfirm`/`uiBack` were implemented in `synth.ts` and
+  exposed on the director, so every button in the game was silent; and the render
+  bridge passed a hardcoded `false` for reduced motion under a comment reading
+  "reducedMotion flag would come from settings", disabling the one setting that
+  exists to suppress trauma shake. Each piece was correct in isolation. Nothing
+  tests for a call site that does not exist.
 
 The lesson is written into the test strategy: **e2e tests drive the built game in
 a real browser and assert on observable state** — instrument readings, visible
@@ -195,13 +253,13 @@ src/
 ├── game/          simulation — headless, deterministic, no framework
 │   ├── core/      World, Simulation, Loop, Pool, Random, step, readModel
 │   ├── systems/   flight, AI, collision, spawn, weapons, drain, score, HUD
-│   ├── entities/  per-archetype spawn and behaviour
+│   ├── entities/  six hostile archetypes — spawn and behaviour, one file each
 │   ├── physics/   integration, drag, gravity, springs, tangent frame, collision
 │   ├── math/      vec3, spherical
 │   └── data/      every tuning constant, waves, enemies, parts, worlds, skins
 ├── platform/      keyboard, pointer, trackpad, gamepad, touch → sampleInput
 ├── render/        R3F scene, one useFrame, instanced pools, disposal registry
-├── audio/         graph, director, synth voices, spatialisation, music
+├── audio/         graph, director, synth voices, spatialisation, music, UI bus
 ├── state/         zustand meta state, hudRefs, versioned persistence
 ├── ui/            screens, HUD components, accessibility
 ├── workers/       terrain baking, off the main thread

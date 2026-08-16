@@ -318,6 +318,14 @@ export function writeHud(frame: HudFrame, markers: ThreatMarker[]) {
     const color = marker.hostile ? 'var(--hostile)' : 'var(--friendly)'
     const strokeColor = marker.extinguished ? 'var(--inert)' : (marker.urgency === 'critical' ? 'var(--critical)' : color)
     el.setAttribute('stroke', strokeColor)
+    // `currentColor` resolves against the CSS `color` property, not `stroke`.
+    // The Sapper and Carrier glyphs are filled with `currentColor`, and nothing
+    // in the ring's stylesheet sets `color` — so they inherited `--text-primary`
+    // from `body` and rendered a fixed near-white fill that never turned
+    // hostile, never turned critical and never went inert. Since `--critical` is
+    // white, a Sapper was pinned at "critical" permanently: the one archetype
+    // whose entire point is a rising urgency tell.
+    el.style.color = strokeColor
 
     // Toggle specific shapes
     const children = el.children as HTMLCollectionOf<SVGGraphicsElement>

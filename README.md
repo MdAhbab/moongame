@@ -45,6 +45,17 @@ commits and it blows past you into two seconds of exposed overshoot, where it
 takes 2.5× damage and cannot shoot. Flares during the wind-up abort the run
 outright. Trading fire head-on is the losing move.
 
+**Six archetypes, and the last three change what you do rather than how hard
+you fight.** Harvesters are the clock, Interceptors make travel dangerous, and
+Sentinels turn a time problem into a positioning one. Then the back third of the
+campaign arrives:
+
+| | |
+|---|---|
+| **Sapper** (wave 8) | Runs flat and fast at an outpost and detonates for 14 integrity in one stroke. One hit kills it, it never fires, and it arms visibly first — but there is no arriving late. Every other threat is a clock; this one is a deadline. |
+| **Warden** (wave 9) | A radial field that makes every *other* hostile inside it immune. A Sentinel says *move*, because flanking beats a directional shield. A Warden says *shoot me first*, because nothing else gets through. |
+| **Carrier** (wave 11) | Parks high and unarmed, and launches a fresh Harvester every 11 s forever. Clear the outpost beneath it and it is threatened again before you reach the next one — the only kill that prevents future work. |
+
 **Damage lands on a system, not just a number.** A hit degrades the engine, the
 weapon bay or the stabiliser. A hurt engine loses thrust and misfires; a hurt bay
 fires slower, runs hotter and jams; a hurt stabiliser costs turn authority and
@@ -81,6 +92,13 @@ an ability while withholding the instructions.
 offers you **three legendaries, of which you fit one**. The worst moment in a run
 is therefore also the one with the highest-stakes decision in it, rather than
 something you watch happen to you.
+
+**Kills and surviving outposts pay credits, and credits buy parts in the
+Hangar.** A good campaign affords maybe a quarter of the catalogue, so which
+slots to spend on is the question — and since every part carries a real nerf
+beside its buff, none of them is the answer. Stock is free and stock is the
+balanced tuning, so a first run is never a handicapped one. Credits are earned
+only; there is nothing to buy them with.
 
 ## What is worth knowing about the build
 

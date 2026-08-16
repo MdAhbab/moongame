@@ -313,7 +313,9 @@ Lost outposts stay lost for the run. **Losing all eight ends the run** — this 
 
 ## 7.3 Enemies
 
-Three archetypes. Distinguished by **silhouette and behaviour first**, colour second (§35.1).
+Six archetypes. Distinguished by **silhouette and behaviour first**, colour second (§35.1).
+
+The first three are the teaching arc and carry waves 1–7 unchanged. The last three arrive one per wave from 8, and each exists because **the first three cannot ask its question**: the Harvester is a clock you can arrive late to, the Interceptor is a fight, the Sentinel is a position. Adding more of any of them past a handful is volume, not difficulty.
 
 ### Harvester — the objective threat
 - **Silhouette:** Squat, hexagonal, four legs. Slow, deliberate.
@@ -337,7 +339,38 @@ Three archetypes. Distinguished by **silhouette and behaviour first**, colour se
 - **Counter:** Flank it — which costs time, the scarce resource.
 - **Role:** Converts a time problem into a *positioning* problem. Introduced Wave 6.
 
-**Population cap: 48 concurrent.** Spawns beyond the cap queue rather than dropping, so difficulty stays authored rather than emergent. This directly fixes V1's unbounded growth.
+### Sapper — the deadline
+
+- **Silhouette:** Small forward-swept wedge, no cockpit, trailing a hard bright line. Comes in *under* the traffic at 16 u, so it reads as a different kind of movement rather than as a Harvester in a hurry.
+- **Behaviour:** Runs flat and fast at one outpost, arms for 0.9 s where everything can see it, then commits straight down and detonates on the surface. Never fires. Never steers once armed.
+- **Health:** 1 hit. **Threat:** 14 integrity in one stroke, plus 16 hull to the craft inside an 18 u blast.
+- **Counter:** See it and shoot it. One hit is always enough.
+- **Role:** The deadline. Every other objective threat is a clock you can arrive late to — reaching a Harvester with eight seconds left still saves eight seconds. A Sapper has **no partial credit**, so the only way to lose to one is to have been somewhere else, which is the game's subject. Introduced Wave 8.
+
+**A detonation is not a kill.** It bypasses the kill path entirely: no score, no bounty, no combo. A Sapper reaching its target is a failure, and paying the player for it would say otherwise.
+
+### Warden — the priority
+
+- **Silhouette:** Three-armed ring on a slim column, the field hanging off the arms. Stations at 52 u — above the Sentinel, below the Carrier.
+- **Behaviour:** Parks over an outpost and projects a **radial** field of 46 u that makes every *other* hostile inside it immune. Fires slow heavy shots like a Sentinel.
+- **Health:** 8 hits. It is never shielded — not by itself, and not by another Warden. Two of them covering each other would be unkillable, which is the emergent lock a "protects nearby allies" rule produces if nobody writes the exception down.
+- **Threat:** 7 hull per hit, plus everything it is currently covering.
+- **Counter:** Kill it first. Positioning does nothing.
+- **Role:** The priority, and the Sentinel's question from the other side. A Sentinel says *move*, because its shield is directional and flanking beats it. A Warden says *retarget*, because no amount of positioning gets damage through. It is the only archetype that changes what to shoot rather than where to stand. Introduced Wave 9.
+
+The field is **drawn**, and every absorbed round says so where it landed. Damage silently failing is the exact fault the Sentinel's visible shield arc was rebuilt to remove, and a radial field has no silhouette of its own to make its boundary legible.
+
+### Carrier — the source
+
+- **Silhouette:** Broad slab hull with an open launch bay underneath. The biggest thing in the sky, parked at 72 u.
+- **Behaviour:** Holds high station over an outpost and launches a fresh Harvester every 11 s, indefinitely. **Unarmed.**
+- **Health:** 14 hits. **Threat:** Not to the craft — to work already done.
+- **Counter:** Kill it, or out-clear it. Both are legitimate. One costs seconds now; the other costs seconds on every future trip to that outpost.
+- **Role:** The source, and the sharpest triage question in the game. Clear the outpost beneath a live Carrier and it is threatened again before you have reached the next one — the only hostile whose existence *undoes* work. It does not shoot precisely so that the cost of going after it is only the seconds, never a fight. Introduced Wave 11.
+
+**Population cap: 48 concurrent.** Spawns beyond the cap queue rather than dropping, so difficulty stays authored rather than emergent. This directly fixes V1's unbounded growth. A Carrier's launches draw from the same pool and **defer** rather than drop when it is full, by the same rule.
+
+Six types do not fit inside 48 at the old ceilings, so Endless was re-cut: 25 Harvesters (untouched — they are the drain clock, and the whole difficulty of a deep wave is how fast integrity falls), then 10 Interceptors (was 14), 4 Sentinels (was 8), 4 Sappers, 3 Wardens, 2 Carriers. Cutting the first two rather than shaving all six evenly is the point: past a handful, more Interceptors or Sentinels adds volume without adding a decision, while a Carrier or a Warden changes what the player has to *do*. A deep Endless wave is harder than it was with fewer things in it.
 
 ## 7.4 Weapons
 
@@ -376,6 +409,9 @@ Surviving outposts are useful, not merely scoreable. Flying within 15 u of a nom
 | Harvester killed after landing | 80 | Still useful, less optimal |
 | Interceptor | 100 | |
 | Sentinel | 250 | |
+| Sapper **shot down** | 120 | A Sapper that *detonates* pays nothing at all — see §7.3 |
+| Warden | 300 | |
+| Carrier | 450 | The largest kill, because it is the only one that prevents future work |
 | **Outpost survives a wave** | **400** | The largest single source — rewards the *decision layer* |
 | Wave cleared with all outposts intact | 800 | |
 | Accuracy bonus | ×(1.0 – 2.5) | Hits ÷ shots, applied at wave end |
@@ -571,9 +607,61 @@ This is the only honest way to implement aim assist: the system may help, but it
 > The rest of this section still describes the *within-a-run* design, which is
 > unchanged.
 
+> **Amendment, 2026-08-16 — one line of the amendment above is now false.**
+>
+> Both blocks above promise **"no currency, no daily rewards, no energy timers,
+> no randomised loot."** There is a currency. It is called credits, it is earned
+> from kill bounties and from sector revenue at wave end, it persists at schema
+> v7, and it is spent in the Hangar to buy ship parts. Saying so plainly is the
+> point of this block: the clause was written down as a guarantee, and a
+> guarantee that quietly stops holding is worse than one that was never made.
+>
+> **What is true now:**
+>
+> - Credits are **earned only**. There is no way to buy them, and there is
+>   nothing in the game or outside it that sells them. The project has nothing
+>   to monetise.
+> - **No daily rewards, no energy timers, no login streaks, no randomised loot
+>   boxes, no timed offers, nothing time-gated.** Every other clause in both
+>   lists above stands, unqualified. Nothing in this game happens on a schedule
+>   the game controls.
+> - Credits are spent on the same thirty parts the level table already gated.
+>   They add a second axis to an existing choice; they do not add a new kind of
+>   thing to want.
+>
+> **Why the original objection is still answered.** The argument against
+> meta-progression was never really about the word *currency* — it was about two
+> concrete harms, and both are still structurally prevented:
+>
+> - *"It would gate content behind repetition — hostile to a judge who plays
+>   once."* Stock is slot 0 of every slot, it is exactly the tuning in
+>   `constants.ts`, and `partCost` returns **0** for it, forever, for everyone.
+>   A first-time player is playing the balanced game, complete, at full price of
+>   nothing. `tests/unit/economy.test.ts` asserts it, alongside the property that
+>   every non-stock part costs more than zero — so the failure that produced this
+>   amendment cannot recur silently.
+> - *"It exists to bring a lapsed player back on a schedule the game controls."*
+>   A currency you can only obtain by playing well, in a game with nothing to
+>   sell, has no schedule to enforce. It is the same receipt XP is, denominated
+>   differently.
+>
+> **What it honestly costs.** A well-played twelve-wave campaign pays roughly
+> 15,000 credits against a catalogue that costs far more, so one run kits out
+> most of one build and no run kits out all of them. That *is* a form of content
+> behind repetition, and pretending otherwise would be the dishonest version of
+> this note. The defence is that what repetition buys is **lateral**: every part
+> carries a real nerf beside its buff, cruise speed stays clamped to ±8%, and
+> every triage wave keeps two viable routes at every extreme of the loadout
+> space. A level-30 pilot with a full catalogue is differently equipped, not more
+> powerful — so the thing a second run unlocks is a different question to answer,
+> not a higher number to answer it with.
+>
+> One line changed. The rest of the guarantee is intact, and the parts of it that
+> the original argument was actually defending are the parts that held.
+
 Progression is **within a run**, not across runs. There is no unlock grind, no persistent upgrade tree, no currency. A run is a self-contained 6–10 minute arc, which suits a judging window and respects the player's time.
 
-**Across runs, only these persist:** personal best score, furthest wave, settings, keybindings, tutorial-completed flag. *(Amended: also pilot XP, the equipped loadout, the selected livery, and three achievement flags. See `src/state/persistence.ts`, schema v3.)*
+**Across runs, only these persist:** personal best score, furthest wave, settings, keybindings, tutorial-completed flag. *(Amended: also pilot XP, credits, purchased parts, the equipped loadout and its per-slot tuning, the selected livery and world, and the achievement flags. See `src/state/persistence.ts`, schema v7.)*
 
 **Why no meta-progression.** It would gate content behind repetition — a dark pattern in a competition context, and actively hostile to a judge who plays once. The game must be fully itself on the first run.
 
@@ -607,13 +695,15 @@ Enemy *health* and *damage* are held nearly constant. Inflating those makes a ga
 | 5 | 2, spread | — | Real triage: you will lose one |
 | 6 | 2 | **Sentinels** | Positioning problem |
 | 7 | 3 | — | Overload begins |
-| 8 | 3, wide spread | — | |
-| 9 | 3 | Mixed composition | |
+| 8 | 3, wide spread | **Sappers** | Worse geometry, plus the first threat with no partial credit |
+| 9 | 3 | **Wardens** | The composition itself is the difficulty — and one thing in it changes what to shoot |
 | 10 | 4 | — | Peak pressure |
-| 11 | 3 | Heavy Sentinels | Different shape of hard |
-| 12 | 4, full spread | All types | Finale |
+| 11 | 3 | **Carriers** | Fewer fronts, harder ones — and the first threat that undoes work already done |
+| 12 | 4, full spread | All six archetypes | Finale |
 
 **Wave 3 is deliberately winnable.** The player's first taste of triage should be one they can solve, so they learn the *shape* of the decision before they face one with no good answer at Wave 5. Teaching a mechanic and testing it in the same beat is a common design error.
+
+**Waves 1–7 are untouched by the late archetypes.** They are the teaching arc, and letting a Sapper or a Warden leak backwards into them would test a mechanic before it was taught — the same error the Wave 3 / Wave 5 pairing exists to avoid, made one layer up. The back third had nothing new to say with three archetypes; it was varying simultaneity and spread over a composition the player had fully understood since Wave 6, which is volume rather than difficulty.
 
 ## 10.3 Dynamic difficulty adjustment — bounded and disclosed
 

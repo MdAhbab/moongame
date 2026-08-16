@@ -30,7 +30,7 @@
  * has no silhouette of its own to make the boundary legible. So it is drawn, and
  * every absorbed round says so where it landed.
  */
-import { EnemyPhase, GameEvent, type World } from '../core/World.ts'
+import { EnemyKind, EnemyPhase, GameEvent, type World } from '../core/World.ts'
 import { type Vec3, addScaled, copy, create, length, normalize, scale, sub } from '../math/vec3.ts'
 import { arrive, predictAim } from '../physics/steering.ts'
 import { spawnProjectile } from './Projectile.ts'
@@ -107,15 +107,34 @@ export function updateWarden(world: World, slot: number, dt: number): void {
  * early exit on `kind` rejects the overwhelming majority on one integer compare.
  * A spatial index would be more code than the thing it indexes.
  *
- * **A Warden never shields itself or another Warden.** Two of them covering each
- * other would be unkillable — a bug with no counterplay at all, and exactly the
- * kind of emergent lock that a "protects nearby allies" rule produces if nobody
- * writes the exception down.
+ * ## Two archetypes are never shielded
+ *
+ * **Another Warden**, because two of them covering each other would be
+ * unkillable — a lock with no counterplay at all, and exactly the kind of
+ * emergent failure a "protects nearby allies" rule produces if nobody writes the
+ * exception down.
+ *
+ * **A Sapper**, for a sharper reason. A Warden holds station at
+ * `WARDEN_ALTITUDE` over its outpost and the field reaches
+ * `WARDEN_FIELD_RADIUS`, so the protected volume spans altitude 6 to 98 — a
+ * column that completely contains a Sapper's terminal dive, which ends at
+ * `R + 5.5`. And `SpawnSystem.startWave` assigns both archetypes with
+ * `targets[i % spread]` from index 0, so the pairing is *guaranteed* rather than
+ * unlucky: on wave 11 two of three Sappers spawn under a Warden.
+ *
+ * Measured, that was 1.02 s of total invulnerability ending 0.8 frames above the
+ * detonation point — an outpost losing 14 integrity with no counterplay
+ * whatsoever. It also directly contradicts the promise the Sapper is built on
+ * and this file's neighbour states twice: "one hit kills it, so seeing it in
+ * time is always sufficient". A blanket immunity rule breaks precisely the
+ * archetype whose whole design is that there is no partial credit, so the
+ * archetype wins the argument and takes the exception.
  * @hot-path
  */
 export function shieldedByWarden(world: Readonly<World>, slot: number): boolean {
   const enemies = world.enemies
-  if ((enemies.kind[slot] as number) === WARDEN.kind) return false
+  const kind = enemies.kind[slot] as number
+  if (kind === EnemyKind.Warden || kind === EnemyKind.Sapper) return false
 
   const { pool, body } = enemies
   const x = body.x[slot] as number

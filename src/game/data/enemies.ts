@@ -1,9 +1,15 @@
 /**
  * Enemy archetypes (gameplan §7.3).
  *
- * Three, distinguished by **silhouette and behaviour first, colour second**
+ * Six, distinguished by **silhouette and behaviour first, colour second**
  * (§35.1) — so a player with any form of colour vision deficiency loses no
  * information, and so threat identification works at 40 px in the periphery.
+ *
+ * The first three carry the campaign's teaching arc across waves 1–6; the last
+ * three arrive in the back third, and each exists to ask a question the first
+ * three cannot. `models.test.ts` asserts the whole size ordering and a minimum
+ * separation between every pair, because six silhouettes is the point at which
+ * "you can tell them apart" stops being self-evident.
  *
  * Health and damage are held nearly constant across the wave arc on purpose:
  * inflating those makes a game feel *unfair*, while inflating simultaneity and

@@ -295,10 +295,29 @@ export class Simulation {
     return this.world.phase.kind === 'RunOver'
   }
 
-  /** Records the finished wave and returns its breakdown for the WaveClear screen. */
+  /**
+   * Records the finished wave and returns its breakdown for the WaveClear screen.
+   *
+   * Idempotent per wave. The 4 Hz phase poller in `App` can observe `WaveClear`
+   * more than once — clearing an interval does not un-queue a callback already
+   * due — so this is called twice for the same wave often enough that
+   * `WaveClearScreen` documents the behaviour and guards its own perk draft
+   * against it. Score and credits were already safe, because `settleIfNeeded`
+   * gates on `wave.settled`; the *push* was not, so the run summary that
+   * `ResultsScreen` and the leaderboard payload are both built from could carry
+   * a wave twice.
+   *
+   * Replacing rather than skipping, because the second capture is the more
+   * current one and there is no reason to prefer a stale row.
+   */
   captureWaveSummary(): WaveSummary {
     const summary = buildWaveSummary(this.world)
-    this.summaries.push(summary)
+    const last = this.summaries[this.summaries.length - 1]
+    if (last !== undefined && last.wave === summary.wave) {
+      this.summaries[this.summaries.length - 1] = summary
+    } else {
+      this.summaries.push(summary)
+    }
     return summary
   }
 

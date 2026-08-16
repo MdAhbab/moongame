@@ -1277,26 +1277,36 @@ export function resetWorldForRun(world: World): void {
   world.drones.pool.reset()
   world.particles.pool.reset()
 
-  // Held input belongs to the run that was being flown. Carrying it over would
-  // hand the next run a phantom press edge on its very first step.
-  world.prevInput.switchWeapon = false
-  world.prevInput.engineCut = false
-  world.prevInput.bombing = false
-  world.prevInput.flaring = false
+  /*
+   * Held input belongs to the run that was being flown. Carrying it over would
+   * hand the next run a phantom press edge on its very first step.
+   *
+   * Copied field-by-field from a fresh record rather than listed by hand. The
+   * hand-written version reset four of the five and omitted `deployDrones`, so
+   * starting a run with the drone key held reproduced exactly the bug the rest
+   * of the block exists to prevent — and on a field whose docstring says it
+   * lives on the World *specifically* so replays reproduce edges, which makes it
+   * a determinism hazard rather than only a gameplay one.
+   */
+  Object.assign(world.prevInput, createInputPrevious())
 
+  /*
+   * Wave state, likewise assigned wholesale.
+   *
+   * The hand-written copy missed six fields the moment the settlement record was
+   * added, so a world reset from the Title screen sat on the menu still carrying
+   * the last run's `settled` flag and credit figures. `startWave` happens to
+   * clear them on the `startRun` path, which is what kept it from being visible
+   * — but `resetRun()` does not call `startWave`, and this function's own
+   * history includes forgetting the bomb pool for exactly this reason.
+   *
+   * `targets` is restored by hand because it is `readonly` and must keep its
+   * identity: the array is aliased by the spawner across the whole wave.
+   */
   const wave = world.wave
-  const freshWave = createWaveState()
-  wave.number = freshWave.number
-  wave.pending = freshWave.pending
-  wave.spawnTimer = freshWave.spawnTimer
-  wave.plannedHarvesters = freshWave.plannedHarvesters
-  wave.plannedInterceptors = freshWave.plannedInterceptors
-  wave.plannedSentinels = freshWave.plannedSentinels
-  wave.targets.length = 0
-  wave.elapsed = freshWave.elapsed
-  wave.cleared = freshWave.cleared
-  wave.outpostsAtStart = freshWave.outpostsAtStart
-  wave.damageTakenThisWave = freshWave.damageTakenThisWave
+  const targets = wave.targets
+  Object.assign(wave, createWaveState(), { targets })
+  targets.length = 0
 
   const score = world.score
   const freshScore = createScoreState()

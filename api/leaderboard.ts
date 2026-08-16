@@ -11,6 +11,7 @@ import { db } from '../db/client.ts'
 import { leaderboard, accounts } from '../db/schema.ts'
 import { checkRateLimit, clientIp, respond429 } from './_lib/rateLimit.ts'
 import { json, methodNotAllowed } from './_lib/http.ts'
+import { SIM_VERSION } from '../src/game/data/constants.ts'
 
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   if (req.method !== 'GET') return methodNotAllowed(res)
@@ -42,8 +43,21 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     })
     .from(leaderboard)
     .innerJoin(accounts, eq(accounts.id, leaderboard.accountId))
+    /*
+     * Scoped to the physics the board is currently played on.
+     *
+     * `score.ts` already refuses to *verify* a submission against a superseded
+     * `SIM_VERSION`, because there is no honest way to reinterpret an input log
+     * against physics it never ran on. This query did not apply the same rule to
+     * *reading*, so runs verified under an older version went on ranking beside
+     * new ones — and at v4 that meant three archetypes instead of six, a
+     * different Endless composition and a different bounty ladder, all competing
+     * on one table. A version gate that partitions writes and not reads leaves
+     * exactly the hole it was added to close.
+     */
     .where(
       and(
+        eq(leaderboard.simVersion, SIM_VERSION),
         eq(leaderboard.worldId, worldId),
         eq(leaderboard.endless, endless),
       ),

@@ -65,10 +65,19 @@ into the build, and is git-ignored.
 | `public/enemies/interceptor.png` | Generated (Gemini), 2026-08-11 | Original work | Threat card, 64 px. Black sky keyed to alpha. |
 | `public/enemies/sentinel.png` | Generated (Gemini), 2026-08-11 | Original work | Threat card, 64 px. Black sky keyed to alpha. |
 
-The three threat cards are the ones with a hard constraint on them: §35.1
-requires the archetypes to be **distinguishable by outline alone at 40 px**, so
-a player with any colour vision deficiency loses no information. Wide-with-legs,
+The threat cards are the ones with a hard constraint on them: §35.1 requires the
+archetypes to be **distinguishable by outline alone at 40 px**, so a player with
+any colour vision deficiency loses no information. Wide-with-legs,
 thin-and-pointed, flat-slab. A prettier card that loses that is a regression.
+
+**Three archetypes now ship without one.** Sapper, Warden and Carrier landed on
+2026-08-16 and have no `public/enemies/*.png`. That is not a broken screen —
+`BriefingScreen` hides an image that fails to load and the card falls back to the
+archetype's `silhouette` line — but it is a half-illustrated set, and the
+outline constraint gets harder rather than easier with six: a Sapper must not
+read as an Interceptor and a Carrier must not read as a Sentinel. Prompts for
+the three are Set D in `docs/ASSET-PROMPTS.md`. Add the rows here when the files
+land, not when the feature does.
 
 ---
 
@@ -78,9 +87,10 @@ thin-and-pointed, flat-slab. A prettier card that loses that is a regression.
 |---|---|---|---|---|
 | `public/models/craft.glb` | [Kenney Space Kit](https://kenney.nl/assets/space-kit) — `craft_speederA.glb` | CC0 1.0 | No attribution required (CC0) | Compressed with gltf-transform v4.4.2 (meshopt). Player craft. |
 
-The three hostile archetypes are **not** assets and have no row here. They are
+The six hostile archetypes are **not** assets and have no row here. They are
 built at startup by `src/render/geometry/shapes.ts`, which is original work in
-the repository like any other source file.
+the repository like any other source file. Adding three archetypes in August 2026
+cost three functions and no files, which is the argument for the arrangement.
 
 They were briefly `public/models/{harvester,interceptor,sentinel}.glb`, produced
 by a `tools/generate-enemy-models.mjs` that assembled them from the same

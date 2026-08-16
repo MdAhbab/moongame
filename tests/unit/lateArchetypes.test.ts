@@ -203,6 +203,32 @@ describe('Warden — the priority', () => {
     expect(world.enemies.pool.active[victim]).toBe(0)
   })
 
+  it('never shields a Sapper, whose whole design is that seeing it is enough', () => {
+    // A Warden stations at WARDEN_ALTITUDE and its field reaches
+    // WARDEN_FIELD_RADIUS, so the protected volume is a column over the outpost
+    // that entirely contains a Sapper's terminal dive. `SpawnSystem` assigns
+    // both from `targets[i % spread]` starting at 0, so the pairing is
+    // guaranteed rather than unlucky — on wave 11, two of three Sappers.
+    // Measured before the fix: 1.02 s of total invulnerability ending 0.8
+    // frames above the detonation point, for 14 integrity with no counterplay.
+    const world = createWorld('warden-sapper', 7)
+    const warden = world.enemies.pool.alloc()
+    spawnWarden(world, warden, 0)
+
+    const sapper = world.enemies.pool.alloc()
+    spawnSapper(world, sapper, 0, 0.2)
+    world.enemies.body.spawnAt(
+      sapper,
+      (world.enemies.body.x[warden] as number) + 4,
+      world.enemies.body.y[warden] as number,
+      world.enemies.body.z[warden] as number,
+    )
+
+    expect(shieldedByWarden(world, sapper)).toBe(false)
+    damageEnemy(world, sapper, 1)
+    expect(world.enemies.pool.active[sapper]).toBe(0)
+  })
+
   it('does not reach past its stated radius', () => {
     const world = createWorld('warden-range', 7)
     const warden = world.enemies.pool.alloc()

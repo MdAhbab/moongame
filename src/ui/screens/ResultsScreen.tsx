@@ -12,6 +12,7 @@ export function ResultsScreen() {
   const pilotXp = useSettingsStore(s => s.progress.pilotXp)
   const updateProgress = useSettingsStore(s => s.updateProgress)
   const addPilotXp = useSettingsStore(s => s.addPilotXp)
+  const addCredits = useSettingsStore(s => s.addCredits)
   const unlockAchievement = useSettingsStore(s => s.unlockAchievement)
   const awardedRef = useRef(false)
 
@@ -31,6 +32,24 @@ export function ResultsScreen() {
       }))
     }
     addPilotXp(xpFromRun(runSummary))
+
+    /*
+     * Credits are banked here, with the XP, rather than per wave.
+     *
+     * They used to be awarded by `WaveClearScreen`, which is the one screen a
+     * run does not always reach: a run that ends in defeat goes to the Debrief,
+     * a victory and an abort both come straight here, and none of those three
+     * paths pass through a wave-clear. So the wave that actually killed you —
+     * usually the longest and most lucrative one — paid nothing, and an aborted
+     * run paid nothing at all, contradicting `settleIfNeeded`'s own note that an
+     * aborted wave "still owes the player whatever it earned".
+     *
+     * Summing `waves` also makes this the single place a run pays out, on the
+     * same terms as XP and the personal best: the run is the unit. And it is
+     * idempotent by the same `awardedRef` that already guards those two, rather
+     * than needing a second, differently-scoped guard on another screen.
+     */
+    addCredits(runSummary.waves.reduce((sum, wave) => sum + wave.creditsEarned, 0))
 
     // Achievement liveries (§9). Evaluated here rather than in the simulation
     // because they are profile facts, not world facts — the world has no idea a

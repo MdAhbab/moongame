@@ -1,12 +1,19 @@
 /**
  * Pilot progression — 30 levels, driven entirely by run performance.
  *
- * **XP has exactly one source: `xpFromRun`, fed by `RunSummary`.** No
- * currency, no daily rewards, no energy timers, no login streaks, no
- * randomised drops. Every one of those exists to bring a lapsed player back
- * on a schedule the game controls; this game has nothing to sell and nobody
- * to bring back on a schedule, so none of them belong here. XP is a receipt
- * for a run that already happened, not a hook to make you start another one.
+ * **XP has exactly one source: `xpFromRun`, fed by `RunSummary`.** No daily
+ * rewards, no energy timers, no login streaks, no randomised drops. Every one
+ * of those exists to bring a lapsed player back on a schedule the game
+ * controls; this game has nothing to sell and nobody to bring back on a
+ * schedule, so none of them belong here. XP is a receipt for a run that
+ * already happened, not a hook to make you start another one.
+ *
+ * This paragraph used to open "No currency" as well, and that clause is no
+ * longer true: credits are earned from bounties and sector revenue and spent on
+ * parts in the Hangar (gameplan §9, amendment of 2026-08-16). The distinction
+ * the rest of the list draws still holds exactly — credits come only from
+ * performance, cannot be bought, expire on no schedule and buy nothing
+ * randomised — which is why the other four clauses survive unchanged.
  *
  * Weighting mirrors `ScoreSystem.ts`'s own thesis — "outposts saved outscore
  * kills by design" — because a progression system that rewarded kills over

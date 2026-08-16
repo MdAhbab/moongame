@@ -66,7 +66,6 @@ export function WaveClearScreen({
 }): React.JSX.Element {
   const goto = useGameStore((s) => s.goto)
   const waveSummary = useGameStore((s) => s.waveSummary)
-  const addCredits = useSettingsStore((s) => s.addCredits)
   const reducedMotion = useSettingsStore((s) => s.settings.accessibility.reducedMotion)
 
   const [phase, setPhase] = useState<'stats' | 'total' | 'ready'>('stats')
@@ -136,18 +135,16 @@ export function WaveClearScreen({
     setSelectedPerkId(null)
     setPerkOptions(drawRandomPerks(activePerks, undefined, 3))
 
-    // The wave's real earnings: sector revenue plus every bounty banked since
-    // it began. This used to read `creditsEarned ?? outpostsSaved * 150`, and
-    // the left side was structurally always zero — so the fallback was the only
-    // branch that ever ran, and the profile was credited a number the
-    // simulation had never computed while every combat bounty was discarded.
-    const summary = useGameStore.getState().waveSummary
-    if (summary) addCredits(summary.creditsEarned)
+    // Credits are *not* banked here. This screen used to do it, and it is the
+    // one screen a run does not always reach — defeat goes to the Debrief,
+    // victory and abort go straight to Results — so the wave that ended the run
+    // paid nothing. `ResultsScreen` sums the whole run instead, alongside the XP
+    // and the personal best, which is the only place all three paths meet.
     // `activePerks` is the live array off the world and is mutated in place, so
     // its identity never changes and it cannot re-trigger this. It is read here
     // rather than listed as a dependency for exactly that reason.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wave, addCredits])
+  }, [wave])
 
   /* ---- reveal choreography: three transitions, not three hundred ---- */
   useEffect(() => {
@@ -206,7 +203,14 @@ export function WaveClearScreen({
     }
     raf = requestAnimationFrame(tick)
     return () => { cancelAnimationFrame(raf) }
-  }, [wave, reducedMotion, summaryLines, waveSummary])
+    // Keyed on the wave, not on `waveSummary` or the callback derived from it.
+    // The 4 Hz poller can write a fresh summary *object* for the same wave after
+    // routing here, and depending on its identity cancelled the count and
+    // restarted it from `performance.now()` — the numbers visibly jumped back to
+    // zero and ran again. The settlement effect above is keyed the same way for
+    // the same reason.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wave, reducedMotion])
 
   if (!waveSummary) {
     return (
