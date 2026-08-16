@@ -336,7 +336,8 @@ function buildWaveSummary(world: World): WaveSummary {
     survived: outpost.status !== 'Lost',
   }))
 
-  const totals = settleWaveIfNeeded(world)
+  settleIfNeeded(world)
+  const wave = world.wave
 
   return {
     wave: world.wave.number,
@@ -354,25 +355,37 @@ function buildWaveSummary(world: World): WaveSummary {
     hits: world.score.hits,
     accuracy: accuracy(world),
     accuracyBonus: accuracyBonus(world),
-    noDamage: totals.noDamageBonus,
-    allIntact: totals.allIntactBonus,
-    creditsEarned: totals.creditsEarned,
+    noDamage: wave.noDamageBonus,
+    allIntact: wave.allIntactBonus,
+    survivalPoints: wave.survivalPoints,
+    accuracyBonusApplied: wave.accuracyBonusApplied,
+    creditsEarned: wave.creditsEarned,
     timeline,
     cause: describeCause(world),
   }
 }
 
 /**
- * `settleWave` is normally called by the step that clears the wave. Calling it
- * again here would double-award, so the bonus figures are recomputed without
- * mutating score when the wave has already settled.
+ * Settles the wave if the step has not already done it.
+ *
+ * The step that clears a wave settles it; an *abort* ends a wave that was never
+ * cleared, and that one still owes the player whatever it earned. So the guard
+ * is needed — but it used to be the whole mechanism, and it was the bug.
+ *
+ * The old version returned literal zeros for an already-settled wave and the
+ * summary builder read its bonus figures from that return value. Since the
+ * normal path always settles first, `noDamage`, `allIntact` and `creditsEarned`
+ * were **always zero** on every wave-clear screen the player ever saw: the
+ * FLAWLESS and PERFECT DEFENSE badges were unreachable code, and the credit
+ * figure fell through to a fabricated `outpostsSaved * 150` in the shell.
+ *
+ * The figures now live on `world.wave`, written by `settleWave` at the moment it
+ * pays them, so reading them is not a recomputation and cannot double-award.
+ * This function only has to answer "has it been paid yet".
  */
-function settleWaveIfNeeded(world: World): { noDamageBonus: number; allIntactBonus: number; creditsEarned: number } {
-  if (world.wave.cleared) {
-    return { noDamageBonus: 0, allIntactBonus: 0, creditsEarned: 0 }
-  }
-  const settled = settleWave(world)
-  return { noDamageBonus: settled.noDamageBonus, allIntactBonus: settled.allIntactBonus, creditsEarned: settled.creditsEarned }
+function settleIfNeeded(world: World): void {
+  if (world.wave.settled) return
+  settleWave(world)
 }
 
 /**

@@ -688,6 +688,35 @@ export interface WaveState {
   cleared: boolean
   outpostsAtStart: number
   damageTakenThisWave: number
+
+  /**
+   * What the wave actually paid, recorded by `settleWave` at the moment it runs.
+   *
+   * These exist because the settlement figures were being *recomputed* by the
+   * summary builder, and could not be: `settleWave` mutates score and credits,
+   * so calling it twice would double-award, and the guard against that returned
+   * zeros for an already-settled wave. Since the clearing step always settles
+   * before the summary is captured, every consumer of those figures received
+   * zero, always. The FLAWLESS and PERFECT DEFENSE badges were unreachable, and
+   * the WaveClear screen fell through to a fabricated credit figure.
+   *
+   * Recording at the point of truth removes the question. `settled` says whether
+   * these numbers mean anything yet.
+   */
+  settled: boolean
+  survivalPoints: number
+  accuracyBonusApplied: number
+  allIntactBonus: number
+  noDamageBonus: number
+  /**
+   * Credits earned across the whole wave — sector revenue *and* every combat
+   * bounty banked since the wave began.
+   *
+   * Bounties were credited to `world.credits` on each kill and then discarded:
+   * nothing ever read that field into the profile, and the shell persisted
+   * `outpostsSaved * 150` instead. Every kill in the game paid nothing.
+   */
+  creditsEarned: number
 }
 
 export interface ScoreState {
@@ -1076,6 +1105,12 @@ export function createWaveState(): WaveState {
     cleared: false,
     outpostsAtStart: OUTPOST_COUNT,
     damageTakenThisWave: 0,
+    settled: false,
+    survivalPoints: 0,
+    accuracyBonusApplied: 0,
+    allIntactBonus: 0,
+    noDamageBonus: 0,
+    creditsEarned: 0,
   }
 }
 

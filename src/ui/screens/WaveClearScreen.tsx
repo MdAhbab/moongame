@@ -32,6 +32,7 @@ import { useSettingsStore } from '../../state/useSettingsStore'
 import { Button } from '../components/ui'
 import { uiConfirm } from '../../audio/uiBus'
 import { drawRandomPerks, type Perk } from '../../game/data/perks'
+import { summaryKills } from '../../game/core/readModel'
 import styles from './WaveClearScreen.module.css'
 
 const LINE_COUNT = 4
@@ -98,16 +99,34 @@ export function WaveClearScreen({
 
   const wave = waveSummary?.wave ?? -1
 
+  /**
+   * The breakdown, in the terms the scoring model actually uses.
+   *
+   * Every line here is a number `settleWave` paid. The previous version showed
+   * `kills x 100`, `outpostsSaved x 700` and `wave x 300` — none of which are
+   * terms in the model — and printed `accuracyBonus`, which is a *multiplier*
+   * between 1.0 and 2.5, as a points value with a plus sign in front of it. So a
+   * player who shot well saw "+2" and four rows that did not add up to the total
+   * underneath them. §12 rules out an interface that lies about the game.
+   *
+   * These four plus the kill score are exactly `waveTotal`, so the rows sum to
+   * the number below them, which is the only version of this screen worth
+   * showing.
+   */
   const summaryLines = useCallback((): Line[] => {
     if (!waveSummary) return []
     const s = waveSummary
-    const totalKills = s.killsHarvester + s.killsInterceptor + s.killsSentinel
-    return [
-      { label: `Kills ×${totalKills}`, value: totalKills * 100, hero: false },
-      { label: `Accuracy ${Math.round(s.accuracy * 100)}%`, value: Math.round(s.accuracyBonus), hero: false },
-      { label: `Outposts Saved · ${s.outpostsSaved}`, value: s.outpostsSaved * 700, hero: true },
-      { label: `Wave ${s.wave} Bonus`, value: s.wave * 300, hero: false },
+    const lines: Line[] = [
+      { label: `Kills ×${summaryKills(s)}`, value: s.score, hero: false },
+      { label: `Accuracy ${Math.round(s.accuracy * 100)}%`, value: s.accuracyBonusApplied, hero: false },
+      { label: `Outposts Held · ${s.outpostsSaved}`, value: s.survivalPoints, hero: true },
     ]
+    // The two conditional bonuses only appear when they were earned. A row
+    // reading "+0" is worse than no row: it draws the eye to a thing that did
+    // not happen.
+    if (s.noDamage > 0) lines.push({ label: 'Flawless', value: s.noDamage, hero: false })
+    else if (s.allIntact > 0) lines.push({ label: 'Perfect Defense', value: s.allIntact, hero: false })
+    return lines
   }, [waveSummary])
 
   /* ---- per-wave settlement: credits, perk draft, reveal choreography ---- */
@@ -117,8 +136,13 @@ export function WaveClearScreen({
     setSelectedPerkId(null)
     setPerkOptions(drawRandomPerks(activePerks, undefined, 3))
 
+    // The wave's real earnings: sector revenue plus every bounty banked since
+    // it began. This used to read `creditsEarned ?? outpostsSaved * 150`, and
+    // the left side was structurally always zero — so the fallback was the only
+    // branch that ever ran, and the profile was credited a number the
+    // simulation had never computed while every combat bounty was discarded.
     const summary = useGameStore.getState().waveSummary
-    if (summary) addCredits(summary.creditsEarned ?? summary.outpostsSaved * 150)
+    if (summary) addCredits(summary.creditsEarned)
     // `activePerks` is the live array off the world and is mutated in place, so
     // its identity never changes and it cannot re-trigger this. It is read here
     // rather than listed as a dependency for exactly that reason.
@@ -144,7 +168,9 @@ export function WaveClearScreen({
   useEffect(() => {
     if (wave < 0) return
     const lines = summaryLines()
-    const total = waveSummary?.score ?? 0
+    // The sum of the rows, not `score` — which is the kill total alone and
+    // would have printed less than the lines above it added up to.
+    const total = lines.reduce((sum, line) => sum + line.value, 0)
 
     const write = (node: HTMLSpanElement | null, value: number, prefix: string): void => {
       if (node !== null) node.textContent = prefix + Math.round(value).toLocaleString()
@@ -192,7 +218,7 @@ export function WaveClearScreen({
 
   const s = waveSummary
   const lines = summaryLines()
-  const creditsEarned = s.creditsEarned ?? s.outpostsSaved * 150
+  const creditsEarned = s.creditsEarned
 
   function handleSelectPerk(perk: Perk): void {
     if (selectedPerkId !== null) return
@@ -233,7 +259,7 @@ export function WaveClearScreen({
           <span className={styles.creditsValue}>+{creditsEarned.toLocaleString()} CR</span>
         </div>
 
-        {/* Total Score */}
+        {/* Total Score. The rows above sum to exactly this. */}
         <div className={`${styles.totalRow} ${phase !== 'stats' ? styles.totalRowVisible : ''}`}>
           <span className={styles.totalLabel}>WAVE SCORE</span>
           <span className={styles.totalValue} ref={totalRef}>0</span>

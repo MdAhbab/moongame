@@ -69,23 +69,31 @@ export function DebriefScreen() {
           })}
         </div>
 
+        {/* Kills by archetype.
+            Only the ones the player has actually met: six fixed cells would put
+            three permanent zeroes in front of a wave-1 player for archetypes
+            that do not appear until wave 8, which reads as things they failed to
+            kill rather than things that were never there. */}
         <div className={styles.statsGrid}>
           <div className={styles.statItem}>
             <span>ACCURACY</span>
             <strong>{Math.round(waveSummary.accuracy * 100)}%</strong>
           </div>
-          <div className={styles.statItem}>
-            <span>HARVESTERS</span>
-            <strong>{waveSummary.killsHarvester}</strong>
-          </div>
-          <div className={styles.statItem}>
-            <span>INTERCEPTORS</span>
-            <strong>{waveSummary.killsInterceptor}</strong>
-          </div>
-          <div className={styles.statItem}>
-            <span>SENTINELS</span>
-            <strong>{waveSummary.killsSentinel}</strong>
-          </div>
+          {([
+            ['HARVESTERS', waveSummary.killsHarvester],
+            ['INTERCEPTORS', waveSummary.killsInterceptor],
+            ['SENTINELS', waveSummary.killsSentinel],
+            ['SAPPERS', waveSummary.killsSapper],
+            ['WARDENS', waveSummary.killsWarden],
+            ['CARRIERS', waveSummary.killsCarrier],
+          ] as const)
+            .filter(([, count]) => count > 0)
+            .map(([label, count]) => (
+              <div key={label} className={styles.statItem}>
+                <span>{label}</span>
+                <strong>{count}</strong>
+              </div>
+            ))}
         </div>
 
         <div className={styles.actions}>

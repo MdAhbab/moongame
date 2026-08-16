@@ -438,6 +438,9 @@ export function damageEnemy(world: World, slot: number, amount: number, chain = 
   let bounty = bountyFor(kind)
   if (world.activePerks.includes('bounty_protocol')) bounty = Math.round(bounty * 1.5)
   world.credits += bounty
+  // Also onto the wave, which is what the shell actually banks. `world.credits`
+  // alone was written by every kill and read by nothing.
+  world.wave.creditsEarned += bounty
 
   // Thermal Siphon perk: vent 50% heat and restore 10% boost charge on kill
   if (world.activePerks.includes('thermal_siphon')) {

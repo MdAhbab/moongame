@@ -153,11 +153,38 @@ export function settleWave(world: World): {
   const waveTotal = survivalPoints + accuracyBonusApplied + allIntactBonus + noDamageBonus
   score.total += waveTotal
 
-  let creditsEarned = Math.round(sectorIntegritySum * CREDITS_PER_OUTPOST_PERCENT)
-  if (world.activePerks.includes('bounty_protocol')) creditsEarned = Math.round(creditsEarned * 1.5)
-  world.credits += creditsEarned
+  let revenue = Math.round(sectorIntegritySum * CREDITS_PER_OUTPOST_PERCENT)
+  if (world.activePerks.includes('bounty_protocol')) revenue = Math.round(revenue * 1.5)
+  world.credits += revenue
 
-  return { survivalPoints, accuracyBonusApplied, allIntactBonus, noDamageBonus, waveTotal, creditsEarned }
+  /*
+   * Record what the wave paid, at the point it is paid.
+   *
+   * The summary builder used to recompute these by calling `settleWave` again,
+   * guarded on `wave.cleared` so it would not double-award — and since the step
+   * that clears a wave always settles it first, that guard hit every time and
+   * every consumer got zeros. Two badges and the whole credit figure were
+   * downstream of numbers that were structurally always zero.
+   *
+   * `creditsEarned` is the wave's *total*, not just the revenue: bounties have
+   * been accruing into `wave.creditsEarned` on every kill since the wave began.
+   */
+  const wave = world.wave
+  wave.settled = true
+  wave.survivalPoints = survivalPoints
+  wave.accuracyBonusApplied = accuracyBonusApplied
+  wave.allIntactBonus = allIntactBonus
+  wave.noDamageBonus = noDamageBonus
+  wave.creditsEarned += revenue
+
+  return {
+    survivalPoints,
+    accuracyBonusApplied,
+    allIntactBonus,
+    noDamageBonus,
+    waveTotal,
+    creditsEarned: wave.creditsEarned,
+  }
 }
 
 /**

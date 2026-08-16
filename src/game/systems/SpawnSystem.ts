@@ -71,6 +71,12 @@ export function startWave(world: World, waveNumber: number): void {
   wave.elapsed = 0
   wave.cleared = false
   wave.damageTakenThisWave = 0
+  wave.settled = false
+  wave.survivalPoints = 0
+  wave.accuracyBonusApplied = 0
+  wave.allIntactBonus = 0
+  wave.noDamageBonus = 0
+  wave.creditsEarned = 0
   wave.spawnTimer = 1.2
   wave.targets.length = 0
 

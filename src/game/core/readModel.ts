@@ -311,7 +311,20 @@ export interface WaveSummary {
   accuracyBonus: number
   noDamage: number
   allIntact: number
-  creditsEarned?: number
+  /**
+   * The itemised settlement, exactly as `settleWave` paid it.
+   *
+   * Carried so the WaveClear breakdown can show the numbers the simulation
+   * actually awarded. It could not, and so it invented them: the screen
+   * displayed `kills x 100`, `outpostsSaved x 700` and `wave x 300` — none of
+   * which are terms in the scoring model — beside a real wave total they did not
+   * sum to. §12 rules out an interface that lies about the game, and a score
+   * breakdown that does not break down the score is squarely that.
+   */
+  survivalPoints: number
+  accuracyBonusApplied: number
+  /** Sector revenue plus every combat bounty banked during the wave. */
+  creditsEarned: number
   timeline: OutpostTimelineEntry[]
   /**
    * The one-sentence cause, e.g.
@@ -319,6 +332,26 @@ export interface WaveSummary {
    * Null when nothing was lost (§12.2 P2).
    */
   cause: string | null
+}
+
+/**
+ * Every hostile killed, across all six archetypes.
+ *
+ * Lives here rather than at the two call sites that need it, because both had
+ * the sum written out by hand and both listed exactly three archetypes. Adding a
+ * fourth silently under-reported the kill count on the WaveClear breakdown and
+ * the Debrief — a wrong number on the screen whose entire job is to tell the
+ * player what just happened.
+ */
+export function summaryKills(summary: Readonly<WaveSummary>): number {
+  return (
+    summary.killsHarvester +
+    summary.killsInterceptor +
+    summary.killsSentinel +
+    summary.killsSapper +
+    summary.killsWarden +
+    summary.killsCarrier
+  )
 }
 
 export interface RunSummary {

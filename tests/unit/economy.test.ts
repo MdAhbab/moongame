@@ -110,6 +110,43 @@ describe('credits are earned by playing', () => {
     expect(half).toBeLessThan(full)
   })
 
+  it('banks bounties as well as revenue, so kills are worth something', () => {
+    // The failure this pins: bounties were credited to `world.credits` on every
+    // kill and read by nothing. The shell banked `outpostsSaved * 150` from the
+    // wave summary instead, whose `creditsEarned` was structurally always zero
+    // because `settleWave` had already run by the time the summary was built.
+    // Every kill in the game paid the player nothing.
+    const world = createWorld('bounty-banked', 7)
+    world.wave.outpostsAtStart = world.outposts.length
+
+    const slot = world.enemies.pool.alloc()
+    world.enemies.kind[slot] = EnemyKind.Carrier
+    world.enemies.hp[slot] = 1
+    world.enemies.body.spawnAt(slot, 0, 180, 0)
+    damageEnemy(world, slot, 99)
+
+    const settled = settleWave(world)
+    expect(world.wave.settled).toBe(true)
+    expect(settled.creditsEarned).toBeGreaterThan(CREDITS_PER_CARRIER)
+    expect(world.wave.creditsEarned).toBe(settled.creditsEarned)
+  })
+
+  it('reports the wave bonuses it actually paid, rather than zero', () => {
+    // `settleWaveIfNeeded` returned literal zeros for an already-settled wave,
+    // and the clearing step always settles first — so `noDamage` and `allIntact`
+    // were always zero on the screen that renders the FLAWLESS and PERFECT
+    // DEFENSE badges. Both were unreachable for the life of the game.
+    const world = createWorld('bonuses-paid', 7)
+    world.wave.outpostsAtStart = world.outposts.length
+    world.wave.damageTakenThisWave = 0
+
+    const settled = settleWave(world)
+    expect(settled.noDamageBonus).toBeGreaterThan(0)
+    expect(world.wave.noDamageBonus).toBe(settled.noDamageBonus)
+    expect(world.wave.allIntactBonus).toBe(settled.allIntactBonus)
+    expect(world.wave.survivalPoints).toBe(settled.survivalPoints)
+  })
+
   it('earns enough across a campaign to buy some of the catalogue, and not all of it', () => {
     // The shape of the economy in one assertion. If a single run could buy
     // everything the Hangar stops being a decision; if it could buy nothing the
