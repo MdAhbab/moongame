@@ -1,8 +1,22 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import styles from './ui.module.css'
 import { captureNextBinding, codeLabel } from '../../platform/deviceInput'
+import { uiClick, uiHover } from '../../audio/uiBus'
 import type { Binding } from '../../state/persistence'
 
+/**
+ * The shared button — and the single place UI audio is armed.
+ *
+ * Wiring the bus here rather than at each call site is the whole point: there
+ * are forty-odd buttons across sixteen screens, and a convention that every one
+ * of them remembers to play a click is a convention that will be broken by the
+ * next screen somebody adds. The sound is a property of *being a button*.
+ *
+ * A disabled button stays silent. Clicking one is a non-event, and answering it
+ * with the same confirmation tone as a real press would tell the player
+ * something happened when nothing did — which is the one thing feedback must
+ * never do (§13.4).
+ */
 export function Button({
   label,
   primary,
@@ -18,9 +32,24 @@ export function Button({
 }) {
   let className = `${styles.button} ${full ? styles.buttonFull : ''}`
   if (primary && !disabled) className += ` ${styles.buttonPrimary}`
-  
+
   return (
-    <button onClick={onClick} disabled={disabled} className={className}>
+    <button
+      onClick={() => {
+        if (disabled) return
+        uiClick()
+        onClick?.()
+      }}
+      // Pointer-only, not focus. Keyboard navigation moves focus through every
+      // control between two points, so playing this on focus turns one arrow
+      // press into a burst of tones and makes the quietest sound in the game
+      // the most frequent one.
+      onPointerEnter={() => {
+        if (!disabled) uiHover()
+      }}
+      disabled={disabled}
+      className={className}
+    >
       {label}
     </button>
   )

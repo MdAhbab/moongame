@@ -137,8 +137,9 @@ export class AudioDirector {
    * @param dt Real seconds since the previous call — the *render* delta, not
    *   the fixed step: audio is a presentation concern and runs once per frame
    *   however many simulation substeps happened (§18.2).
+   * @param live Whether the world is actually advancing this frame. See below.
    */
-  update(world: Readonly<World>, dt: number): void {
+  update(world: Readonly<World>, dt: number, live = true): void {
     const synth = this.engine.synth
     if (synth === null) return
 
@@ -148,17 +149,33 @@ export class AudioDirector {
     /*
      * Is the player in that craft, or is it scenery?
      *
-     * The Title screen flies the craft on autopilot through the *real* flight
-     * model — that is the whole point of `AttractSystem`, and it is why the menu
-     * cannot drift from how the game actually looks. It also means the engine
-     * was running at cruise thrust behind every menu, so opening the game
-     * greeted you with a full-throated engine roar over the title.
+     * Two independent questions, and conflating them was a shipped bug.
      *
-     * Attract is presentation, not a run. The ambience and the score belong to
-     * it; the cockpit does not. Read from the phase rather than passed in by the
-     * shell, so it cannot disagree with what the world is actually doing.
+     * **Is this a run?** The Title screen flies the craft on autopilot through
+     * the *real* flight model — that is the whole point of `AttractSystem`, and
+     * it is why the menu cannot drift from how the game actually looks. It also
+     * means the engine was running at cruise thrust behind every menu, so
+     * opening the game greeted you with a full-throated engine roar over the
+     * title. Attract is presentation, not a run: the ambience and the score
+     * belong to it, the cockpit does not. That question the *phase* answers, so
+     * it cannot disagree with what the world is actually doing.
+     *
+     * **Is the world moving?** The phase cannot answer this one, and assuming it
+     * could is what made the wave-clear screen unbearable. This callback runs on
+     * every screen that mounts the canvas, but the world only advances on a few
+     * of them — so on WaveClear, Paused, Debrief and Results the craft's state
+     * is *frozen* while the continuous voices carry on reading it. The engine
+     * held a full-throated roar at the last cruise velocity, the heat whine held
+     * at the last heat value, and a lock that happened to be mid-acquisition
+     * when the wave ended sat on one pitch and droned until the player clicked
+     * through. None of it decayed, because nothing was moving to decay it.
+     *
+     * That question belongs to the shell, which is the same place `stepping`
+     * already lives (`RenderBridge`: "Owned by the UI, not inferred from
+     * `world.phase`"). A frozen world gets silence from every state-driven
+     * voice, which is what "the world is not moving" should sound like.
      */
-    const inCockpit = world.phase.kind !== 'Attract'
+    const inCockpit = live && world.phase.kind !== 'Attract'
 
     /* Continuous voices, driven by state rather than by events (§27.1). */
     const vx = craft.velocity.x
@@ -443,15 +460,27 @@ export class AudioDirector {
     
     // Engagement range is ~80u
     const inCombat = minHostileDistSq < 6400
-    
-    this.targetTension = anyThreatened ? 1 : 0
-    this.targetCombat = inCombat ? 1 : 0
-    this.targetAlarm = anyCritical ? 1 : 0
 
-    if (anyCritical && !this.wasCritical) {
+    /*
+     * The adaptive stems follow the same rule as the cockpit voices: they
+     * describe a situation that is *unfolding*, so a frozen world has none.
+     *
+     * The alarm stem is the one that made this urgent. It is driven by outpost
+     * integrity, which does not move while the world is stopped — so clearing a
+     * wave with an outpost still under 25% left the alarm layer pinned at full
+     * over the wave-clear screen, for as long as the player took to read it.
+     * The music is meant to be scoring a crisis; between waves there is no
+     * crisis to score, and letting the mix relax is what makes the *next* wave's
+     * alarm mean something again.
+     */
+    this.targetTension = live && anyThreatened ? 1 : 0
+    this.targetCombat = live && inCombat ? 1 : 0
+    this.targetAlarm = live && anyCritical ? 1 : 0
+
+    if (live && anyCritical && !this.wasCritical) {
       this.caption('[Outpost integrity critical]')
     }
-    this.wasCritical = anyCritical
+    this.wasCritical = live && anyCritical
 
     const THREAT_LAMBDA = 0.5 // ~1.4s half-life
     this.tension = damp(this.tension, this.targetTension, THREAT_LAMBDA, dt)

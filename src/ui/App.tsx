@@ -56,6 +56,7 @@ import { defaultWorld, worldById } from '../game/data/worlds.ts'
 import { encodeReplay } from '../game/core/InputRecorder.ts'
 import { cloudAvailable, getAccount, submitScore } from '../net/apiClient.ts'
 import { AudioDirector } from '../audio/index.ts'
+import { registerUiAudio } from '../audio/uiBus.ts'
 
 /** §32.2 — event-driven state syncs at 10 Hz. Per-frame values never come here. */
 const META_SYNC_INTERVAL = 0.1
@@ -332,6 +333,24 @@ export function App(): React.JSX.Element {
   }, [simulation])
 
   /**
+   * Cuts every sounding voice when a run ends.
+   *
+   * `AudioDirector.reset()` has always existed, with a docstring promising it
+   * runs "for run restarts and hard screen changes, where the alternative is the
+   * previous run's explosion ringing out over the Title screen". **Nothing ever
+   * called it.** The Title screen is the one place a run is torn down — see
+   * `resetRun` below — so it is the one place the tail of that run has to be
+   * cut, along with the duck the last critical alert left in the mix.
+   *
+   * The continuous voices are released by `update`'s `live` gate a frame later
+   * anyway; what this adds is the *one-shots* already in flight, which a gate
+   * cannot reach because they are scheduled ahead on the audio clock.
+   */
+  useEffect(() => {
+    if (screen === 'Title') audioDirector.reset()
+  }, [screen, audioDirector])
+
+  /**
    * Discards accumulated time whenever the world stops.
    *
    * The bridge used to reset its own accumulator on the frames it skipped.
@@ -381,6 +400,20 @@ export function App(): React.JSX.Element {
       audioDirector.engine.setMusicVolume(aud.music / 100)
     })
   }, [simulation, audioDirector.engine, haptics])
+
+  /**
+   * Arms the buttons.
+   *
+   * The director is owned by the ref above and reachable from nowhere else, so
+   * without this every button in the game is silent — which is how it shipped.
+   * Cleared on teardown so StrictMode's remount and the ErrorBoundary's "Try
+   * again" cannot leave the bus pointing at a director whose `AudioContext` has
+   * already been replaced.
+   */
+  useEffect(() => {
+    registerUiAudio(audioDirector)
+    return () => { registerUiAudio(null) }
+  }, [audioDirector])
 
   /** Initialize AudioContext on first interaction */
   useEffect(() => {
@@ -484,6 +517,26 @@ export function App(): React.JSX.Element {
   }, [screen, simulation, activeWorld])
 
   /**
+   * Whether the world is allowed to advance.
+   *
+   * Only while the player is actually looking at it. Menus freeze the world
+   * rather than letting it run on behind them — the Debrief in particular is
+   * untimed, and a world that keeps ticking there spawns the next wave into an
+   * empty room.
+   *
+   * Taken from `screenRunsSimulation` rather than spelled out again here. It was
+   * spelled out here, and the two disagreed — the predicate said `WaveClear`
+   * also runs, this gate said it does not — which is how §11's Sim column came
+   * to have two contradictory implementations, one of which nothing called.
+   *
+   * Declared above `onFrame` because the audio director needs it too: the frame
+   * callback runs on every screen that mounts the canvas, but the world only
+   * moves on some of them, and the continuous voices have to know the difference
+   * (see `AudioDirector.update`).
+   */
+  const stepping = screenRunsSimulation(screen) || screenAnimatesAttract(screen)
+
+  /**
    * Called at the end of the render bridge's `useFrame`, after the world has
    * been stepped and the instance buffers written.
    *
@@ -531,7 +584,12 @@ export function App(): React.JSX.Element {
         setMetaSnapshot(buffers.meta)
       }
 
-      audioDirector.update(world, frameSeconds)
+      // `stepping` rather than an assumed true: a frozen world must not be
+      // sonified as a moving one. Without it the engine roars on at the last
+      // cruise velocity over WaveClear, Paused, Debrief and Results, and a lock
+      // caught mid-acquisition drones on one pitch until the player clicks
+      // through.
+      audioDirector.update(world, frameSeconds, stepping)
       haptics.update(world)
 
       // Consumers have had their look; clear so the next frame starts empty.
@@ -557,7 +615,7 @@ export function App(): React.JSX.Element {
         }
       }
     },
-    [simulation, buffers, setMetaSnapshot, audioDirector, haptics, tier, screen, setToast, monitor],
+    [simulation, buffers, setMetaSnapshot, audioDirector, haptics, tier, screen, setToast, monitor, stepping],
   )
 
   /**
@@ -690,21 +748,6 @@ export function App(): React.JSX.Element {
    * context. Only Boot and Loading render without it.
    */
   const showScene = screenRendersScene(screen)
-
-  /**
-   * Whether the world is allowed to advance.
-   *
-   * Only while the player is actually looking at it. Menus freeze the world
-   * rather than letting it run on behind them — the Debrief in particular is
-   * untimed, and a world that keeps ticking there spawns the next wave into an
-   * empty room.
-   *
-   * Taken from `screenRunsSimulation` rather than spelled out again here. It was
-   * spelled out here, and the two disagreed — the predicate said `WaveClear`
-   * also runs, this gate said it does not — which is how §11's Sim column came
-   * to have two contradictory implementations, one of which nothing called.
-   */
-  const stepping = screenRunsSimulation(screen) || screenAnimatesAttract(screen)
 
   /**
    * Escape backs out of a menu. **This is the only handler for it.**

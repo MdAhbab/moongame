@@ -22,7 +22,6 @@
  */
 import { useMemo } from 'react'
 import * as THREE from 'three'
-import { useFrame } from '@react-three/fiber'
 import { registry } from '../disposal.ts'
 import type { WorldPalette } from '../../game/data/worlds.ts'
 import {
@@ -115,15 +114,26 @@ export function Sun({ palette, meshRef, materialRef, coronaMaterialRef }: SunPro
     return { discGeometry, discMaterial, coronaGeometry, coronaMaterial, spike }
   }, [palette.sun])
 
-  useFrame(({ clock }) => {
-    const elapsed = clock.getElapsedTime()
-    if (parts.discMaterial.uniforms['uTime']) {
-      parts.discMaterial.uniforms['uTime'].value = elapsed
-    }
-    if (parts.coronaMaterial.uniforms['uTime']) {
-      parts.coronaMaterial.uniforms['uTime'].value = elapsed
-    }
-  })
+  /*
+   * `uTime` is driven from `RenderBridge`, not from here.
+   *
+   * This component used to own a `useFrame` that wrote both shader clocks from
+   * `clock.getElapsedTime()`, while the render bridge wrote *the same two
+   * uniforms* from `world.time`. Two loops, two time bases, one value — the
+   * "two clocks" failure the architecture doc names as a rule of its own, and
+   * the reason §17.2 permits exactly one `useFrame` in the tree.
+   *
+   * They did not merely duplicate work. `world.time` advances only while the
+   * world is stepping and resets with a run; `getElapsedTime()` is wall-clock
+   * and monotonic from context creation. Whichever subscriber R3F happened to
+   * invoke last won the frame, so the corona's noise field was sampled from a
+   * value that jumped between two unrelated timelines every frame — and it
+   * snapped back by minutes at the moment a run started.
+   *
+   * The bridge's version is the one that survives, because the simulation clock
+   * is the one everything else in the scene is interpolated against. The refs
+   * threaded in below are what it writes through.
+   */
 
   return (
     <group position={[700, 380, 460]}>
