@@ -388,9 +388,25 @@ function settleWaveIfNeeded(world: World): { noDamageBonus: number; allIntactBon
  * difference between a loss that teaches and one that frustrates (§13.4).
  */
 export function describeCause(world: Readonly<World>): string | null {
+  /*
+   * Only losses that happened *in this wave*.
+   *
+   * This scanned the whole board for any `lostAt >= 0`, and `lostAt` is a run
+   * clock that is never cleared — outposts stay lost for the run by design. So
+   * one loss in wave 3 made the cause non-null for every wave after it, and the
+   * Debrief opened waves 4, 5 and 6 by re-explaining the wave-3 loss as though
+   * it had just happened. A player who then held wave 6 perfectly was told they
+   * had lost Cassini.
+   *
+   * Matched on `lostWave` rather than on a time window. The obvious alternative
+   * — comparing `lostAt` against `world.time - wave.elapsed` — is ambiguous at
+   * exactly the boundary it exists to police: a loss on a wave's first step sits
+   * within a float epsilon of the cutoff and is attributed to whichever side the
+   * rounding lands on.
+   */
   let worst: (typeof world.outposts)[number] | null = null
   for (const outpost of world.outposts) {
-    if (outpost.lostAt < 0) continue
+    if (outpost.lostWave !== world.wave.number) continue
     if (worst === null || outpost.lostAt > worst.lostAt) worst = outpost
   }
   if (worst === null) return null

@@ -543,6 +543,17 @@ export interface Outpost {
    */
   lostArcDistance: number
   lostDrainers: number
+  /**
+   * The wave this outpost was lost in, or -1 while it still stands.
+   *
+   * Recorded rather than derived from `lostAt`, because the Debrief needs to ask
+   * "did *this wave* cost anything" and the only alternative is comparing a run
+   * clock against `world.time - wave.elapsed`. That comparison is exact nowhere
+   * and ambiguous at precisely the moment it matters: a loss on a wave's first
+   * step lands within a float epsilon of the boundary and gets attributed to
+   * whichever side of it the rounding falls. A wave number has no epsilon.
+   */
+  lostWave: number
 }
 
 /* ------------------------------------------------------------------ */
@@ -1045,6 +1056,7 @@ function createOutposts(): Outpost[] {
     threats: 0,
     resupplyCooldown: 0,
     lostAt: -1,
+    lostWave: -1,
     threatenedAt: -1,
     lostArcDistance: 0,
     lostDrainers: 0,
@@ -1213,6 +1225,7 @@ export function resetWorldForRun(world: World): void {
     outpost.threats = 0
     outpost.resupplyCooldown = 0
     outpost.lostAt = -1
+    outpost.lostWave = -1
     outpost.threatenedAt = -1
     outpost.lostArcDistance = 0
     outpost.lostDrainers = 0

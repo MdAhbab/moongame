@@ -56,6 +56,7 @@ export function refreshStatus(world: World, outpost: Outpost): void {
   if (next === 'Lost') {
     outpost.integrity = 0
     outpost.lostAt = world.time
+    outpost.lostWave = world.wave.number
     outpost.lostDrainers = outpost.drainers
     outpost.lostArcDistance = arcDistance(world.craft.position, outpost.position, R)
     world.score.outpostsLost++

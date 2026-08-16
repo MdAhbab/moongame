@@ -298,14 +298,21 @@ export function WaveClearScreen({
                * Straight to the Briefing when the wave cost nothing.
                *
                * The Debrief exists to answer §12.2's P2 — "why did I lose?" —
-               * with a timeline and a one-sentence cause. When every outpost
-               * survived there is no such question, and the screen degrades to
-               * "All outposts secured" over an empty chart: a third full-screen
+               * with a timeline and a one-sentence cause. When nothing was lost
+               * there is no such question, and the screen degrades to "All
+               * outposts secured" over an empty chart: a third full-screen
                * interstitial, and a third click, between one wave and the next.
                * Skipping it when it has nothing to say is what keeps the
                * between-wave beat a beat rather than a menu tree.
+               *
+               * `cause` is the whole test, and deliberately not `outpostsLost`.
+               * That field is the run's cumulative total — outposts stay lost
+               * for the run — so gating on it would show the Debrief for every
+               * wave after the first loss, including the ones held perfectly.
+               * `describeCause` is scoped to this wave, so a null cause means
+               * exactly "this wave cost you nothing".
                */
-              goto(s.cause === null && s.outpostsLost === 0 ? 'Briefing' : 'Debrief')
+              goto(s.cause === null ? 'Briefing' : 'Debrief')
             }}
             full
           />

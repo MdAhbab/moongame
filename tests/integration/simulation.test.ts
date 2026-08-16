@@ -429,6 +429,30 @@ describe('outposts and the drain clock (§7.2, §7.3)', () => {
     play(sim, 1, 120)
     expect(sim.captureWaveSummary().cause).toBeNull()
   })
+
+  it('does not re-report an earlier loss on a wave that cost nothing', () => {
+    // `lostAt` is a run clock and outposts stay lost for the run, so a cause
+    // scanned over the whole board is non-null forever after the first loss.
+    // The Debrief then opened every subsequent wave by re-explaining an old
+    // loss as though it had just happened — telling a player who had just held
+    // a wave perfectly that they had lost an outpost.
+    const sim = new Simulation('STALE-CAUSE')
+    sim.beginWave(1)
+    sim.skipBriefing()
+
+    const outpost = sim.world.outposts[3]
+    expect(outpost).toBeDefined()
+    if (outpost === undefined) return
+    outpost.integrity = 0
+    sim.advance(FIXED_DT)
+    expect(describeCause(sim.world)).not.toBeNull()
+
+    // A later wave in which nothing further is lost has nothing to explain.
+    sim.beginWave(2)
+    sim.skipBriefing()
+    play(sim, 1, 120)
+    expect(describeCause(sim.world)).toBeNull()
+  })
 })
 
 describe('the craft (§7.4, §7.6, §22)', () => {
