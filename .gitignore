@@ -24,3 +24,6 @@ playwright-report/
 # originals for images that ship at a tenth the size.
 art-source/
 .vercel
+
+# Editor workspace state
+.cursor

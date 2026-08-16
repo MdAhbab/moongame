@@ -195,6 +195,25 @@ thing is built against.
 
 ---
 
+## The story behind the build
+
+**→ [`docs/STORY.md`](docs/STORY.md)** — what inspired the game, how it was built,
+the challenges along the way, and what I learned, with the actual maths behind the
+flight model, the guidance law, the continuous collision test and the outpost
+lattice.
+
+A taste of it: the whole design falls out of one number, the time to fly to the far
+side of the moon at cruise.
+
+$$T_{\text{crossing}} = \frac{\pi R}{v_{\text{cruise}}} = \frac{\pi \cdot 100}{26.02} \approx 12.1\ \text{s}$$
+
+Twelve seconds to cross. An outpost under four drain beams has about thirty. Every
+deadline in the game is quoted in units of that number rather than in seconds, so
+retuning the moon's radius or the craft's speed moves the whole design with it
+instead of quietly breaking it.
+
+---
+
 ## Running it locally
 
 ```bash
