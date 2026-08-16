@@ -104,3 +104,14 @@ export const WINDUP_FLASH_RATE = 26
 export const DIVE_SWELL = 1.12
 /** Scale while exposed. Smaller and dimmer: visibly the moment to shoot it. */
 export const EXPOSED_SHRINK = 0.88
+
+/**
+ * The Sapper's arming tell (§7.3).
+ *
+ * Faster and larger than the Interceptor's wind-up above, because it has less
+ * time to say a more urgent thing. The Interceptor's flare warns of a threat to
+ * the player, who can choose to disengage; the Sapper's warns of a deadline on
+ * an outpost, which cannot be declined and expires in 0.9 s rather than 1.15.
+ */
+export const SAPPER_FLASH_RATE = 34
+export const SAPPER_ARM_SWELL = 0.4

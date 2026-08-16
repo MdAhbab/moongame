@@ -329,6 +329,9 @@ export function writeHud(frame: HudFrame, markers: ThreatMarker[]) {
       if (cls.includes('glyph-harvester')) child.style.display = marker.kind === 'Harvester' ? 'inline' : 'none'
       else if (cls.includes('glyph-interceptor')) child.style.display = marker.kind === 'Interceptor' ? 'inline' : 'none'
       else if (cls.includes('glyph-sentinel')) child.style.display = marker.kind === 'Sentinel' ? 'inline' : 'none'
+      else if (cls.includes('glyph-sapper')) child.style.display = marker.kind === 'Sapper' ? 'inline' : 'none'
+      else if (cls.includes('glyph-warden')) child.style.display = marker.kind === 'Warden' ? 'inline' : 'none'
+      else if (cls.includes('glyph-carrier')) child.style.display = marker.kind === 'Carrier' ? 'inline' : 'none'
       else if (cls.includes('glyph-outpost')) {
         child.style.display = marker.kind === 'Outpost' ? 'inline' : 'none'
         // Outposts draw hollow if extinguished

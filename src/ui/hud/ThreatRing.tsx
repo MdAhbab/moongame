@@ -33,6 +33,27 @@ function onMarkerPointerDown(event: React.PointerEvent<SVGGElement>): void {
 // Pre-allocated at module scope — not recreated on every render
 const markerIndices = Array.from({ length: MAX_MARKERS }, (_, i) => i)
 
+/**
+ * The marker vocabulary.
+ *
+ * Six hostile archetypes is more than a player can be asked to memorise as six
+ * arbitrary symbols, so the ring does not ask. **Each glyph states a role, and
+ * the roles come in pairs** — every late archetype is drawn as a variation on
+ * the early one it rhymes with, so a player who has learned three shapes can
+ * read all six on sight:
+ *
+ *   chevron  ▲   Harvester — descends onto something
+ *   ▲ filled     Carrier   — descends onto something, and is the source of them
+ *   dart     ◆   Interceptor — comes at you fast
+ *   ◆ pointed    Sapper    — comes at something fast, and only once
+ *   bar      ▬   Sentinel  — blocks
+ *   ▬ ringed     Warden    — blocks, in every direction at once
+ *
+ * The pairing is doing the real work: a filled chevron is unmistakably "a
+ * Harvester, but more so" without anybody having to say it, and that is exactly
+ * what a Carrier is. §35.1's rule holds throughout — the shape carries the
+ * information and colour never does, so none of this depends on hue.
+ */
 function Glyph({ kind }: { kind: MarkerKind }) {
   const common = { strokeWidth: 1.4, fill: 'none', strokeLinejoin: 'round' as const }
   switch (kind) {
@@ -42,6 +63,22 @@ function Glyph({ kind }: { kind: MarkerKind }) {
       return <path d="M 0 -5 L 4 4 L 0 1.5 L -4 4 Z" {...common} />
     case 'Sentinel': // bar
       return <rect x={-5} y={-1.6} width={10} height={3.2} {...common} />
+    case 'Sapper': // narrow spike — a dart with everything but the point removed
+      return <path d="M 0 -6 L 2.6 4 L 0 2 L -2.6 4 Z" {...common} fill="currentColor" fillOpacity={0.85} />
+    case 'Warden': // bar inside a ring: it blocks, from every direction
+      return (
+        <g>
+          <circle cx={0} cy={0} r={5.4} {...common} strokeDasharray="2.2 1.6" />
+          <rect x={-2.8} y={-1.2} width={5.6} height={2.4} {...common} />
+        </g>
+      )
+    case 'Carrier': // filled chevron with a bar under it: a Harvester, and more coming
+      return (
+        <g>
+          <path d="M -6 1 L 0 -5 L 6 1 Z" {...common} fill="currentColor" fillOpacity={0.75} />
+          <path d="M -4 4 L 4 4" {...common} />
+        </g>
+      )
     case 'Outpost': // hexagon
       return (
         <path
@@ -132,6 +169,15 @@ export function ThreatRing({ size = 300 }: { size?: number }) {
           </g>
           <g className="glyph-sentinel" style={{ display: 'none' }}>
              <Glyph kind="Sentinel" />
+          </g>
+          <g className="glyph-sapper" style={{ display: 'none' }}>
+             <Glyph kind="Sapper" />
+          </g>
+          <g className="glyph-warden" style={{ display: 'none' }}>
+             <Glyph kind="Warden" />
+          </g>
+          <g className="glyph-carrier" style={{ display: 'none' }}>
+             <Glyph kind="Carrier" />
           </g>
           <g className="glyph-outpost" style={{ display: 'none' }}>
              <Glyph kind="Outpost" />

@@ -19,6 +19,7 @@ import { type Vec3, create, dot, length, normalize, sub, copy } from '../math/ve
 import { sweepSphere, sweepSphereMoving } from '../physics/collision/sweptSphere.ts'
 import { applyImpulse, separateSpheres } from '../physics/collision/response.ts'
 import { sentinelBlocks } from '../entities/Sentinel.ts'
+import { shieldedByWarden } from '../entities/Warden.ts'
 import { damageDrone } from '../entities/Drone.ts'
 import { archetypeOf } from '../data/enemies.ts'
 import { awardKill, registerHit } from './ScoreSystem.ts'
@@ -27,6 +28,12 @@ import { noteTutorialKill } from './TutorialSystem.ts'
 import {
   HIT_IMPULSE,
   CRAFT_MASS,
+  CREDITS_PER_CARRIER,
+  CREDITS_PER_HARVESTER,
+  CREDITS_PER_INTERCEPTOR,
+  CREDITS_PER_SAPPER,
+  CREDITS_PER_SENTINEL,
+  CREDITS_PER_WARDEN,
   DRONE_RADIUS,
   EXPOSED_DAMAGE_MULTIPLIER,
   MAX_ENEMIES,
@@ -374,6 +381,35 @@ export function damageEnemy(world: World, slot: number, amount: number, chain = 
   const enemies = world.enemies
   if (enemies.pool.active[slot] !== 1) return
 
+  /*
+   * §7.3 — a Warden's field makes everything inside it immune.
+   *
+   * Checked here rather than at each weapon's impact site, for the same reason
+   * the docstring above insists every damage source comes through this function:
+   * there are seven of them — cannon, missile, bomb, cluster, drone, ram and the
+   * chain-lightning arc — and a rule enforced at the call sites is a rule that
+   * six of them will eventually be written without. The Sentinel's shield is
+   * the counter-example and it earns the exception: it is *directional*, so it
+   * has to be tested against the incoming ray at the point of impact, which only
+   * the impact site knows.
+   *
+   * The absorption is announced. A radial field has no silhouette of its own to
+   * make its boundary legible, so without this the player experiences damage
+   * quietly failing — which is precisely the fault the Sentinel's visible shield
+   * arc was rebuilt to remove.
+   */
+  if (shieldedByWarden(world, slot)) {
+    const bx = enemies.body.x[slot] as number
+    const by = enemies.body.y[slot] as number
+    const bz = enemies.body.z[slot] as number
+    // The same inert spark the Sentinel's shield throws, for the same reason and
+    // in the same colour: a player who has learned "grey sparks mean that did
+    // nothing" gets to reuse the lesson rather than learn a second one.
+    emitBurst(world, bx, by, bz, 5, 16, 0.18, 0.35, 'inert', 0.8, null, false)
+    world.events.emit(GameEvent.WardenAbsorbed, slot, 0, bx, by, bz)
+    return
+  }
+
   // §7.3 — an Interceptor caught in the overshoot of a failed attack run takes
   // multiplied damage. This is the payout for the whole bait-and-break dance,
   // and it is applied here so *every* source benefits: cannon, drone, missile,
@@ -395,8 +431,11 @@ export function damageEnemy(world: World, slot: number, amount: number, chain = 
   const points = awardKill(world, kind, hadLanded)
   noteTutorialKill(world)
 
-  // Combat Bounties (Credits)
-  let bounty = kind === EnemyKind.Sentinel ? 120 : kind === EnemyKind.Interceptor ? 50 : 80
+  // Combat bounties, from `constants.ts` rather than from a ladder written out
+  // here. The inline version listed three archetypes and defaulted everything
+  // else to a Harvester's 80, so a Carrier — the most expensive kill in the game
+  // — would have paid the least of any of the six.
+  let bounty = bountyFor(kind)
   if (world.activePerks.includes('bounty_protocol')) bounty = Math.round(bounty * 1.5)
   world.credits += bounty
 
@@ -428,6 +467,31 @@ export function damageEnemy(world: World, slot: number, amount: number, chain = 
   world.events.emit(GameEvent.EnemyKilled, kind, points, x, y, z)
 
   enemies.pool.release(slot)
+}
+
+/**
+ * The credit bounty for killing one of each archetype.
+ *
+ * Tracks the score ladder rather than restating it in a different shape: a
+ * Carrier is the most valuable thing to kill under both, because it is the only
+ * kill that prevents future work.
+ * @hot-path
+ */
+function bountyFor(kind: number): number {
+  switch (kind) {
+    case EnemyKind.Sentinel:
+      return CREDITS_PER_SENTINEL
+    case EnemyKind.Interceptor:
+      return CREDITS_PER_INTERCEPTOR
+    case EnemyKind.Carrier:
+      return CREDITS_PER_CARRIER
+    case EnemyKind.Warden:
+      return CREDITS_PER_WARDEN
+    case EnemyKind.Sapper:
+      return CREDITS_PER_SAPPER
+    default:
+      return CREDITS_PER_HARVESTER
+  }
 }
 
 /**

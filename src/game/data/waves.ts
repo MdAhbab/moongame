@@ -38,6 +38,23 @@ export interface WaveDefinition {
   readonly interceptors: number
   /** Sentinels for the whole wave; each parks over a threatened outpost. */
   readonly sentinels: number
+  /**
+   * Sappers for the whole wave (§7.3). Released against threatened outposts on
+   * the ordinary spawn cadence, so they arrive *among* the Harvesters rather
+   * than as a separate event the player can learn to expect.
+   */
+  readonly sappers: number
+  /** Wardens for the whole wave; each holds station over a threatened outpost. */
+  readonly wardens: number
+  /**
+   * Carriers for the whole wave.
+   *
+   * Deliberately never more than one per threatened outpost. Two Carriers over
+   * one outpost is not twice the decision, it is the same decision with twice
+   * the health bar — and the archetype's cost is meant to be the seconds of
+   * travel, not the seconds of shooting.
+   */
+  readonly carriers: number
   /** Seconds between spawn releases, before DDA. */
   readonly spawnInterval: number
   /** Multiplier on the base drain rate (§10.1 axis 3). */
@@ -68,6 +85,9 @@ export const WAVES: readonly WaveDefinition[] = [
     harvestersPerOutpost: 2,
     interceptors: 0,
     sentinels: 0,
+    sappers: 0,
+    wardens: 0,
+    carriers: 0,
     spawnInterval: 2.6,
     drainScale: 1,
     newElement: 'Harvesters',
@@ -83,6 +103,9 @@ export const WAVES: readonly WaveDefinition[] = [
     harvestersPerOutpost: 3,
     interceptors: 0,
     sentinels: 0,
+    sappers: 0,
+    wardens: 0,
+    carriers: 0,
     spawnInterval: 2.3,
     drainScale: 1,
     newElement: null,
@@ -98,6 +121,9 @@ export const WAVES: readonly WaveDefinition[] = [
     harvestersPerOutpost: 3,
     interceptors: 0,
     sentinels: 0,
+    sappers: 0,
+    wardens: 0,
+    carriers: 0,
     spawnInterval: 2.2,
     drainScale: 1,
     newElement: 'Simultaneous threats',
@@ -113,6 +139,9 @@ export const WAVES: readonly WaveDefinition[] = [
     harvestersPerOutpost: 3,
     interceptors: 2,
     sentinels: 0,
+    sappers: 0,
+    wardens: 0,
+    carriers: 0,
     spawnInterval: 2.1,
     drainScale: 1,
     newElement: 'Interceptors',
@@ -128,6 +157,9 @@ export const WAVES: readonly WaveDefinition[] = [
     harvestersPerOutpost: 3,
     interceptors: 3,
     sentinels: 0,
+    sappers: 0,
+    wardens: 0,
+    carriers: 0,
     spawnInterval: 2.0,
     drainScale: 1.05,
     newElement: null,
@@ -143,6 +175,9 @@ export const WAVES: readonly WaveDefinition[] = [
     harvestersPerOutpost: 3,
     interceptors: 2,
     sentinels: 1,
+    sappers: 0,
+    wardens: 0,
+    carriers: 0,
     spawnInterval: 2.0,
     drainScale: 1.05,
     newElement: 'Sentinels',
@@ -158,6 +193,9 @@ export const WAVES: readonly WaveDefinition[] = [
     harvestersPerOutpost: 3,
     interceptors: 3,
     sentinels: 1,
+    sappers: 0,
+    wardens: 0,
+    carriers: 0,
     spawnInterval: 1.9,
     drainScale: 1.1,
     newElement: 'Three-way pressure',
@@ -173,13 +211,17 @@ export const WAVES: readonly WaveDefinition[] = [
     harvestersPerOutpost: 3,
     interceptors: 4,
     sentinels: 1,
+    sappers: 3,
+    wardens: 0,
+    carriers: 0,
     spawnInterval: 1.85,
     drainScale: 1.1,
-    newElement: null,
+    newElement: 'Sappers',
     title: 'Scattered',
     briefing:
-      'Three outposts, spread wide. Boost exists for exactly this — but you get three seconds of it and six to recharge, so spend it on the leg that actually changes the outcome.',
-    intent: 'Same simultaneity, worse geometry. Make boost a decision rather than a reflex.',
+      'Three outposts, spread wide — and Sappers in among the Harvesters. A Sapper does not drain: it runs flat and fast at an outpost and detonates on it for fourteen points in one stroke. One hit kills it, and there is no arriving late. Watch for the arming flare.',
+    intent:
+      'Worse geometry, plus the first threat with no partial credit. Every other clock can be arrived at late; this one cannot.',
   },
   {
     number: 9,
@@ -188,13 +230,17 @@ export const WAVES: readonly WaveDefinition[] = [
     harvestersPerOutpost: 4,
     interceptors: 4,
     sentinels: 2,
+    sappers: 3,
+    wardens: 1,
+    carriers: 0,
     spawnInterval: 1.8,
     drainScale: 1.1,
-    newElement: 'Mixed composition',
+    newElement: 'Wardens',
     title: 'Combined Arms',
     briefing:
-      'Everything at once, and the Harvesters are coming four to an outpost. Four beams drain in under thirty seconds — barely two crossings of the moon. Anything you clear on the way is time you did not spend clearing it later.',
-    intent: 'All three archetypes interacting. The composition itself is now the difficulty.',
+      'Everything at once, four Harvesters to an outpost — and a Warden over one of them. Nothing inside its field can be hurt at all. Flanking will not help you here the way it helps against a Sentinel: kill the Warden first, or waste every round you fire.',
+    intent:
+      'The composition itself is now the difficulty. A Warden makes that literal by changing what to shoot rather than where to stand.',
   },
   {
     number: 10,
@@ -203,6 +249,9 @@ export const WAVES: readonly WaveDefinition[] = [
     harvestersPerOutpost: 3,
     interceptors: 5,
     sentinels: 2,
+    sappers: 4,
+    wardens: 1,
+    carriers: 0,
     spawnInterval: 1.75,
     drainScale: 1.15,
     newElement: 'Four-way pressure',
@@ -218,13 +267,17 @@ export const WAVES: readonly WaveDefinition[] = [
     harvestersPerOutpost: 4,
     interceptors: 4,
     sentinels: 3,
+    sappers: 3,
+    wardens: 2,
+    carriers: 1,
     spawnInterval: 1.8,
     drainScale: 1.15,
-    newElement: 'Heavy Sentinels',
+    newElement: 'Carriers',
     title: 'Siege',
     briefing:
-      'Fewer fronts, far harder ones. Three Sentinels, one over each threatened outpost, each needing a flank before you can touch the Harvesters behind it. This is a different shape of hard.',
-    intent: 'Back off simultaneity, raise positional cost. Vary the texture before the finale.',
+      'Fewer fronts, far harder ones. Three Sentinels to flank, two Wardens to kill first — and a Carrier holding high station, launching a fresh Harvester every eleven seconds. Clear the outpost beneath it and it will be threatened again before you have reached the next one.',
+    intent:
+      'Back off simultaneity, raise positional cost, and introduce the only threat whose existence undoes work already done.',
   },
   {
     number: 12,
@@ -233,12 +286,15 @@ export const WAVES: readonly WaveDefinition[] = [
     harvestersPerOutpost: 4,
     interceptors: 6,
     sentinels: 3,
+    sappers: 4,
+    wardens: 2,
+    carriers: 2,
     spawnInterval: 1.7,
     drainScale: 1.2,
     newElement: 'Everything',
     title: 'Sea of Night',
     briefing:
-      'Four outposts, as far apart as this moon allows, every archetype in the sky. Hold anything at all and the night is yours. Whatever is still lit when this ends is what you saved.',
+      'Four outposts, as far apart as this moon allows, and all six archetypes in the sky at once. Two Carriers are seeding the board faster than you can clear it, so this is not a wave you finish — it is one you outlast. Hold anything at all and the night is yours.',
     intent: 'The finale. Clearing it with any outpost standing is a victory.',
   },
 ]
@@ -270,11 +326,36 @@ export const WAVES: readonly WaveDefinition[] = [
  *
  * **The total composition stays inside the 48-slot enemy pool.** `startWave`
  * enqueues the whole wave up front, so an unbounded count would not make the
- * wave harder, it would make spawns silently fail. Worst case here is
- * 5 × 5 + 14 + 8 = 47.
+ * wave harder, it would make spawns silently fail.
+ *
+ * That budget had to be re-cut when the three late archetypes landed. It was
+ * 5 x 5 + 14 + 8 = 47 across three types; six types cannot all keep their old
+ * ceilings and still fit. The Harvester block is untouchable — it is the drain
+ * clock, and the whole difficulty of a deep wave is how fast integrity falls —
+ * so the 25 slots it can claim come off the top and the remaining 23 are split:
+ *
+ *     harvesters  5 x 5 = 25     the clock, unchanged
+ *     interceptors       10      was 14
+ *     sentinels           4      was 8
+ *     sappers             4      new
+ *     wardens             3      new
+ *     carriers            2      new
+ *                        --
+ *                        48
+ *
+ * Cutting Interceptors and Sentinels rather than shaving all six evenly is the
+ * point of the exercise: past a handful, more of either adds volume without
+ * adding a decision, while a Carrier or a Warden changes what the player has to
+ * *do*. A deep Endless wave is a harder wave than it was, with fewer things in
+ * it.
+ *
+ * The two slots a Carrier's launches need at runtime come out of the same pool.
+ * `Carrier.updateLaunch` defers rather than drops when it is full, exactly as
+ * `SpawnSystem.release` does, so a saturated board delays pressure instead of
+ * quietly losing it.
  *
  * Everything past those ceilings grows in *count* instead, which raises the
- * cost of every route without making any route impossible. All four bounds are
+ * cost of every route without making any route impossible. All the bounds are
  * asserted in `tests/unit/endless.test.ts` against the constants they derive
  * from, so changing `R`, `V_CRUISE` or `MAX_ENEMIES` fails there rather than
  * quietly producing an unwinnable wave 40.
@@ -295,8 +376,14 @@ function endlessWave(number: number): WaveDefinition {
     threatened,
     spread,
     harvestersPerOutpost: Math.min(5, 4 + Math.floor(cycle / 3)),
-    interceptors: Math.min(14, 6 + cycle * 2 + step),
-    sentinels: Math.min(8, 3 + Math.floor(cycle / 2)),
+    interceptors: Math.min(10, 6 + cycle * 2 + step),
+    sentinels: Math.min(4, 2 + Math.floor(cycle / 2)),
+    // The late archetypes arrive in Endless from the first synthesised wave.
+    // A player only reaches wave 13 by clearing 12, where all three have already
+    // been introduced and taught, so there is nothing left to stagger.
+    sappers: Math.min(4, 2 + Math.floor(cycle / 2)),
+    wardens: Math.min(3, 1 + Math.floor(cycle / 2)),
+    carriers: Math.min(2, 1 + Math.floor(cycle / 3)),
     // Never below the fastest authored wave, and asymptotically approaching a
     // 1.05 s release rather than dropping to zero.
     spawnInterval: Math.max(1.05, 1.7 - cycle * 0.08),
@@ -324,9 +411,45 @@ export function waveDefinition(number: number, endless: boolean): WaveDefinition
   return endless && number > WAVES.length ? endlessWave(number) : undefined
 }
 
+/**
+ * How many of one archetype a wave sends.
+ *
+ * Keyed by the archetype's own `name`, so the Briefing can walk `ARCHETYPES` and
+ * ask rather than carrying a parallel chain of `if`s. It carried one, and the
+ * chain ended in a bare `return wave.sentinels > 0` — a fall-through that was
+ * correct while there were exactly three archetypes and, the moment there were
+ * six, silently claimed a wave contained Sappers, Wardens and Carriers whenever
+ * it contained a single Sentinel.
+ */
+export function archetypeCountInWave(wave: WaveDefinition, name: string): number {
+  switch (name) {
+    case 'Harvester':
+      return wave.harvestersPerOutpost * wave.threatened
+    case 'Interceptor':
+      return wave.interceptors
+    case 'Sentinel':
+      return wave.sentinels
+    case 'Sapper':
+      return wave.sappers
+    case 'Warden':
+      return wave.wardens
+    case 'Carrier':
+      return wave.carriers
+    default:
+      return 0
+  }
+}
+
 /** Total enemies a wave will produce. Shown on the Briefing (§14.3). */
 export function waveEnemyCount(wave: WaveDefinition): number {
-  return wave.harvestersPerOutpost * wave.threatened + wave.interceptors + wave.sentinels
+  return (
+    wave.harvestersPerOutpost * wave.threatened +
+    wave.interceptors +
+    wave.sentinels +
+    wave.sappers +
+    wave.wardens +
+    wave.carriers
+  )
 }
 
 export function waveAt(number: number): WaveDefinition | undefined {

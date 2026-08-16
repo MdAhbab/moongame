@@ -241,10 +241,69 @@ export const Materials = {
     })
   ),
   /**
+   * The late archetypes (§7.3), continuing the same light → dark ordering so
+   * all six stay separable in greyscale.
+   *
+   * The Sapper is the brightest hull in the game and the smallest object in it,
+   * which is not a contradiction: it is a deadline, and a deadline the player
+   * fails to *see* is a deadline that is simply unfair. The Warden is the
+   * coldest and most metallic, so the field it projects reads as equipment
+   * rather than as an aura. The Carrier is the darkest and roughest — an
+   * industrial hull, the biggest silhouette in the sky, and deliberately the
+   * least glamorous thing in it.
+   */
+  sapperHull: registry.trackPermanent(
+    new THREE.MeshStandardMaterial({
+      color: 0xd8a24a,
+      emissive: 0x6a3c08,
+      emissiveIntensity: 0.7,
+      roughness: 0.4,
+      metalness: 0.5,
+    })
+  ),
+  wardenHull: registry.trackPermanent(
+    new THREE.MeshStandardMaterial({
+      color: 0x6d7580,
+      emissive: 0x1a2530,
+      emissiveIntensity: 0.5,
+      roughness: 0.3,
+      metalness: 0.9,
+    })
+  ),
+  carrierHull: registry.trackPermanent(
+    new THREE.MeshStandardMaterial({
+      color: 0x38343a,
+      emissive: 0x140f16,
+      emissiveIntensity: 0.45,
+      roughness: 0.86,
+      metalness: 0.42,
+    })
+  ),
+  /**
+   * A Warden's suppression field.
+   *
+   * Additive, back-side, and depth-writeless, so it reads as a volume the player
+   * is looking *into* rather than as a bubble sitting in front of things. The
+   * opacity is deliberately low: it has to make the boundary unmistakable
+   * without hiding the hostiles inside it, since knowing what is being protected
+   * is half the information it carries.
+   */
+  wardenField: registry.trackPermanent(
+    new THREE.MeshBasicMaterial({
+      color: 0x6fd0ff,
+      transparent: true,
+      opacity: 0.075,
+      side: THREE.BackSide,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      toneMapped: false,
+    })
+  ),
+  /**
    * The lit parts of a hostile: intake mouths, engine nozzles, the Sentinel's
    * shield posts. Unlit on purpose — these are supposed to be light sources,
    * so they stay legible against the moon's day side and read as the same
-   * faction across all three archetypes.
+   * faction across all six archetypes.
    */
   enemyGlow: registry.trackPermanent(
     new THREE.MeshBasicMaterial({

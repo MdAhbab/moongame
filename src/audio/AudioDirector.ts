@@ -424,6 +424,55 @@ export class AudioDirector {
           this.caption('[Systems repaired]')
           break
 
+        /*
+         * §7.3 — a Sapper has armed. The one late archetype that gets a voice.
+         *
+         * It reuses `attackRun` deliberately rather than getting a sound of its
+         * own: both events mean "something has committed and cannot now be
+         * steered away from", and a player who has learned that sound at wave 4
+         * should not have to learn a second one at wave 8 for the same fact. It
+         * is spatialised, because *which* outpost is the entire question.
+         */
+        case GameEvent.SapperArmed:
+          synth.attackRun(x, y, z, far)
+          {
+            const suffix = far ? this.getDirectionSuffix(craft, x, y, z) : ''
+            this.caption(`[Sapper armed${suffix}]`)
+          }
+          break
+
+        /*
+         * The other two late archetypes are deliberately **silent**.
+         *
+         * `WardenAbsorbed` fires once per blocked round, which at cannon rates is
+         * ten times a second — a sound there would be the loudest thing in the
+         * mix and would say nothing the inert grey sparks at the impact point do
+         * not already say. The Sentinel's shield block is silent for exactly the
+         * same reason and has been since it shipped.
+         *
+         * `CarrierLaunch` is genuinely important, and it is still silent, because
+         * the fact it carries arrives twice over on its own: the launched
+         * Harvester is visible on the Threat Ring immediately and emits
+         * `DrainStarted` when it lands. Announcing it a third time would be
+         * noise dressed as information.
+         *
+         * Both keep captions, because a caption costs nothing to a hearing player
+         * and is the only channel a deaf one has for the event log.
+         */
+        case GameEvent.WardenAbsorbed:
+          this.caption('[Shot absorbed — kill the Warden first]')
+          break
+
+        case GameEvent.CarrierLaunch:
+          this.caption('[Carrier launched a Harvester]')
+          break
+
+        case GameEvent.SapperDetonated:
+          // The blast is already carried by `PlayerHit` when it catches the
+          // craft, and by the outpost's own integrity drop when it does not.
+          this.caption('[Sapper detonated on an outpost]')
+          break
+
         default:
           break
       }

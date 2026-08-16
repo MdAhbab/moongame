@@ -13,7 +13,7 @@
 import { useEffect, useState } from 'react'
 import { useGameStore } from '../../state/useGameStore'
 import { Button } from '../components/ui'
-import { waveAt, waveDefinition, waveEnemyCount, drainDuration, type WaveDefinition } from '../../game/data/waves'
+import { archetypeCountInWave, waveAt, waveDefinition, waveEnemyCount, drainDuration, type WaveDefinition } from '../../game/data/waves'
 import { ARCHETYPES } from '../../game/data/enemies'
 import { OUTPOSTS } from '../../game/data/outposts'
 import { BRIEFING_DURATION, DRAIN_RATE_PER_HARVESTER } from '../../game/data/constants'
@@ -99,10 +99,18 @@ export function BriefingScreen() {
           </div>
         </dl>
 
+{/* Built from the archetype table rather than written out, so a new
+            archetype appears here the wave it is authored into and cannot be
+            forgotten. Plural handled per entry: "1 Carriers" on the wave that
+            introduces the archetype is the first thing a player would read. */}
         <p className={styles.composition}>
-          {wave.harvestersPerOutpost * wave.threatened} Harvesters
-          {wave.interceptors > 0 ? ` · ${wave.interceptors} Interceptors` : ''}
-          {wave.sentinels > 0 ? ` · ${wave.sentinels} Sentinels` : ''}
+          {ARCHETYPES.map((archetype) => ({
+            name: archetype.name,
+            count: archetypeCountInWave(wave, archetype.name),
+          }))
+            .filter((entry) => entry.count > 0)
+            .map((entry) => `${String(entry.count)} ${entry.name}${entry.count === 1 ? '' : 's'}`)
+            .join(' · ')}
         </p>
 
         <ThreatCards wave={wave} />
@@ -137,11 +145,7 @@ export function BriefingScreen() {
  * complete either way rather than showing a broken-image icon.
  */
 function ThreatCards({ wave }: { wave: WaveDefinition }): React.JSX.Element | null {
-  const present = ARCHETYPES.filter((archetype) => {
-    if (archetype.name === 'Harvester') return wave.harvestersPerOutpost > 0
-    if (archetype.name === 'Interceptor') return wave.interceptors > 0
-    return wave.sentinels > 0
-  })
+  const present = ARCHETYPES.filter((archetype) => archetypeCountInWave(wave, archetype.name) > 0)
   if (present.length === 0) return null
 
   return (

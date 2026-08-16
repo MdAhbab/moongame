@@ -33,7 +33,7 @@ import { DrainBeams, type DrainBeamRefs } from './instanced/DrainBeams.tsx'
 import { CameraRigController } from './effects/CameraRig.tsx'
 import { PostProcessing } from './effects/PostProcessing.tsx'
 import { EngineTrail, type EngineTrailRefs } from './effects/EngineTrail.tsx'
-import { BOMB_BLAST_RADIUS, R, WINDUP_TIME } from '../game/data/constants.ts'
+import { BOMB_BLAST_RADIUS, R, SAPPER_ARM_TIME, WARDEN_FIELD_RADIUS, WINDUP_TIME } from '../game/data/constants.ts'
 import { bombImpact, bombImpactValid } from '../game/systems/WeaponSystem.ts'
 import {
   DIVE_SWELL,
@@ -46,6 +46,8 @@ import {
   TRACER_MIN_LENGTH,
   TRACER_RADIUS,
   TRACER_REFERENCE_HZ,
+  SAPPER_ARM_SWELL,
+  SAPPER_FLASH_RATE,
   WINDUP_FLASH_RATE,
   WINDUP_SWELL,
 } from './tuning.ts'
@@ -420,7 +422,7 @@ export function RenderBridge({
     //    being taught by a picture that disagreed with the rules.
     //  - The Harvester had no yaw at all and span freely about its axis.
     if (enemiesRef.current) {
-      let hCount = 0, iCount = 0, sCount = 0
+      let hCount = 0, iCount = 0, sCount = 0, paCount = 0, wCount = 0, cCount = 0, fCount = 0
       const { pool, body, kind, headingX, headingY, headingZ } = world.enemies
 
       for (let i = 0; i < pool.count; i++) {
@@ -481,9 +483,55 @@ export function RenderBridge({
           sentinelShieldNormal(facing, world, slot)
           orientTo(dummy, up, facing, side, basis)
           enemiesRef.current.sentinel.setMatrixAt(sCount++, dummy.matrix)
+        } else if (k === EnemyKind.Sapper) {
+          facing.set(headingX[slot] as number, headingY[slot] as number, headingZ[slot])
+
+          // The arming tell (§7.3), in the silhouette itself.
+          //
+          // A Sapper is a deadline, and a deadline the player does not *see*
+          // expiring is simply unfair — so the last `SAPPER_ARM_TIME` seconds
+          // are the most visible thing on screen. It flashes hot white and grows
+          // as the fuse burns down, on the same principle as the Interceptor's
+          // wind-up: legible in peripheral vision, without reading a HUD
+          // element. Faster than the Interceptor's flash, because it has less
+          // time to say it in.
+          if ((world.enemies.phase[slot] as number) === EnemyPhase.Arming) {
+            const fuse = 1 - Math.min(1, (world.enemies.timer[slot] as number) / SAPPER_ARM_TIME)
+            const pulse = 0.5 + 0.5 * Math.sin(world.time * SAPPER_FLASH_RATE)
+            const heat = 0.4 + 0.6 * fuse
+            color.setRGB(1, 0.5 + 0.5 * heat * pulse, 0.25 + 0.35 * heat * pulse)
+            dummy.scale.setScalar(1 + SAPPER_ARM_SWELL * fuse)
+          } else {
+            color.setRGB(1, 1, 1)
+          }
+
+          orientTo(dummy, up, facing, side, basis)
+          enemiesRef.current.sapper.setMatrixAt(paCount, dummy.matrix)
+          enemiesRef.current.sapper.instanceColor?.setXYZ(paCount, color.r, color.g, color.b)
+          paCount++
+        } else if (k === EnemyKind.Warden) {
+          facing.set(headingX[slot] as number, headingY[slot] as number, headingZ[slot])
+          orientTo(dummy, up, facing, side, basis)
+          enemiesRef.current.warden.setMatrixAt(wCount++, dummy.matrix)
+
+          // The field, drawn at the radius the rules actually use. Its own
+          // instance rather than a child of the hull, because it must not
+          // inherit the hull's rotation — a spinning boundary would suggest the
+          // field has a facing, which is the one thing it does not have.
+          if (fCount < enemiesRef.current.wardenField.instanceMatrix.count) {
+            dummy.quaternion.identity()
+            dummy.scale.setScalar(WARDEN_FIELD_RADIUS)
+            dummy.updateMatrix()
+            enemiesRef.current.wardenField.setMatrixAt(fCount++, dummy.matrix)
+            dummy.scale.setScalar(1)
+          }
+        } else if (k === EnemyKind.Carrier) {
+          facing.set(headingX[slot] as number, headingY[slot] as number, headingZ[slot])
+          orientTo(dummy, up, facing, side, basis)
+          enemiesRef.current.carrier.setMatrixAt(cCount++, dummy.matrix)
         }
       }
-      
+
       enemiesRef.current.harvester.count = hCount
       enemiesRef.current.harvester.instanceMatrix.needsUpdate = true
       enemiesRef.current.interceptor.count = iCount
@@ -493,6 +541,17 @@ export function RenderBridge({
       }
       enemiesRef.current.sentinel.count = sCount
       enemiesRef.current.sentinel.instanceMatrix.needsUpdate = true
+      enemiesRef.current.sapper.count = paCount
+      enemiesRef.current.sapper.instanceMatrix.needsUpdate = true
+      if (enemiesRef.current.sapper.instanceColor) {
+        enemiesRef.current.sapper.instanceColor.needsUpdate = true
+      }
+      enemiesRef.current.warden.count = wCount
+      enemiesRef.current.warden.instanceMatrix.needsUpdate = true
+      enemiesRef.current.carrier.count = cCount
+      enemiesRef.current.carrier.instanceMatrix.needsUpdate = true
+      enemiesRef.current.wardenField.count = fCount
+      enemiesRef.current.wardenField.instanceMatrix.needsUpdate = true
     }
 
     // 5. Update Projectiles

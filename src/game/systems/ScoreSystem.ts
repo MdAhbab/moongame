@@ -7,6 +7,9 @@
  * | Harvester killed after landing | 80 |
  * | Interceptor | 100 |
  * | Sentinel | 250 |
+ * | Sapper (§7.3) | 120 |
+ * | Warden (§7.3) | 300 |
+ * | **Carrier** (§7.3) | **450** |
  * | **Outpost survives a wave** | **400** |
  * | Wave cleared with all outposts intact | 800 |
  * | No-damage wave | 300 |
@@ -25,16 +28,18 @@ import {
   ACCURACY_BONUS_MIN,
   COMBO_MAX,
   COMBO_WINDOW,
+  CREDITS_PER_OUTPOST_PERCENT,
+  SCORE_CARRIER,
   SCORE_HARVESTER_AIRBORNE,
   SCORE_HARVESTER_LANDED,
   SCORE_INTERCEPTOR,
   SCORE_NO_DAMAGE_WAVE,
   SCORE_OUTPOST_SURVIVED,
+  SCORE_SAPPER,
   SCORE_SENTINEL,
+  SCORE_WARDEN,
   SCORE_WAVE_ALL_INTACT,
 } from '../data/constants.ts'
-
-export const CREDITS_PER_OUTPOST_PERCENT = 0.5
 
 /** @hot-path */
 export function stepScore(world: World, dt: number): void {
@@ -70,6 +75,18 @@ export function awardKill(world: World, kind: number, hadLanded: boolean): numbe
     case EnemyKind.Sentinel:
       base = SCORE_SENTINEL
       score.killsSentinel++
+      break
+    case EnemyKind.Sapper:
+      base = SCORE_SAPPER
+      score.killsSapper++
+      break
+    case EnemyKind.Warden:
+      base = SCORE_WARDEN
+      score.killsWarden++
+      break
+    case EnemyKind.Carrier:
+      base = SCORE_CARRIER
+      score.killsCarrier++
       break
   }
 
@@ -141,6 +158,25 @@ export function settleWave(world: World): {
   world.credits += creditsEarned
 
   return { survivalPoints, accuracyBonusApplied, allIntactBonus, noDamageBonus, waveTotal, creditsEarned }
+}
+
+/**
+ * Every hostile killed this run, across all six archetypes.
+ *
+ * One function rather than a sum spelled out at each call site. The sum was
+ * written out at two of them and both listed exactly three archetypes, so adding
+ * a fourth would have under-reported the run summary and the pilot XP it feeds
+ * — silently, and only for players who got far enough to meet one.
+ */
+export function totalKills(score: Readonly<World['score']>): number {
+  return (
+    score.killsHarvester +
+    score.killsInterceptor +
+    score.killsSentinel +
+    score.killsSapper +
+    score.killsWarden +
+    score.killsCarrier
+  )
 }
 
 /** Resets per-wave counters. Run totals are untouched. */

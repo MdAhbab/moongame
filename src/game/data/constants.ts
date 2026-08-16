@@ -30,8 +30,10 @@
  *   4 — press-edge acts (weapon mode, engine cut, bomb, flare), sticky lock,
  *       bombs inherit full carrier velocity, area damage routed through the
  *       kill path
+ *   5 — three late archetypes (Sapper, Warden, Carrier), waves 8-12 and
+ *       Endless recomposed around them, AI stepped in reverse pool order
  */
-export const SIM_VERSION = 4
+export const SIM_VERSION = 5
 
 /** 120 Hz: a clean multiple of 60, and stable for the spring stiffnesses below. */
 export const FIXED_DT = 1 / 120
@@ -494,11 +496,77 @@ export const CLUSTER_FUSE = 1.1
 /** Each one's share of the parent's damage. */
 export const CLUSTER_DAMAGE_SHARE = 0.45
 
-/** Combat Economy & Sector Revenue. */
+/**
+ * Combat economy and sector revenue.
+ *
+ * These four were declared here and read by nothing: `CollisionSystem` carried
+ * its own `120 : 50 : 80` ladder inline, so the constants were documentation of
+ * a number that lived somewhere else and could drift from it silently. They are
+ * the source now.
+ *
+ * Bounties track the score ladder rather than restating it in a different
+ * shape — a Carrier is the most valuable thing to kill under both, because it
+ * is the only kill that prevents future work.
+ */
 export const CREDITS_PER_HARVESTER = 80
 export const CREDITS_PER_INTERCEPTOR = 50
 export const CREDITS_PER_SENTINEL = 120
-export const CREDITS_PER_OUTPOST_PERCENT = 2.0
+export const CREDITS_PER_CARRIER = 220
+export const CREDITS_PER_WARDEN = 150
+export const CREDITS_PER_SAPPER = 60
+/**
+ * Credits per point of integrity still standing across all surviving outposts,
+ * settled at wave end.
+ *
+ * 0.5 rather than the 2.0 this constant used to carry, because 2.0 was never the
+ * live figure: `ScoreSystem` declared and exported its *own*
+ * `CREDITS_PER_OUTPOST_PERCENT = 0.5` and used that, so the constant here was
+ * documentation of a number that lived somewhere else and disagreed with it by
+ * 4x. The duplicate is gone and the working value is the one that survives —
+ * changing it silently would have quadrupled every wave's revenue against a
+ * store priced for the old one.
+ *
+ * A full board pays 8 x 100 x 0.5 = 400 a wave, so the twelve-wave campaign is
+ * worth roughly 4,800 before bounties. `parts.ts` is priced against that.
+ */
+export const CREDITS_PER_OUTPOST_PERCENT = 0.5
+
+/* ------------------------------------------------------------------ */
+/* §7.3 — the late archetypes                                          */
+/* ------------------------------------------------------------------ */
+
+/** Altitude a Carrier holds over its outpost. Above the Sentinel's station. */
+export const CARRIER_ALTITUDE = 72
+/** Seconds between a Carrier's Harvester launches. */
+export const CARRIER_LAUNCH_INTERVAL = 11
+/** Grace before a freshly-arrived Carrier launches its first Harvester. */
+export const CARRIER_FIRST_LAUNCH_DELAY = 5
+
+/**
+ * Radius inside which a Warden's field makes other hostiles immune, u.
+ *
+ * Large enough to cover an outpost's airspace and no larger. A field that
+ * reached beyond what the player can see at once would read as damage failing
+ * for no reason, which is the exact failure the Sentinel's visible shield arc
+ * was rebuilt to avoid.
+ */
+export const WARDEN_FIELD_RADIUS = 46
+/** Altitude a Warden holds. Below the Carrier, above the Sentinel. */
+export const WARDEN_ALTITUDE = 52
+
+/** Outpost integrity a Sapper destroys on impact, percentage points. */
+export const SAPPER_IMPACT_DAMAGE = 14
+/** Hull damage to the craft if a Sapper detonates within `SAPPER_BLAST_RADIUS`. */
+export const SAPPER_BLAST_DAMAGE = 16
+export const SAPPER_BLAST_RADIUS = 18
+/**
+ * Seconds a Sapper spends visibly arming before its terminal dive.
+ *
+ * The Interceptor's wind-up is 1.15 s and reads as "it has chosen you". This is
+ * shorter because the Sapper has not chosen you at all — it is a deadline, and
+ * the tell exists so the deadline is *seen* rather than merely expiring.
+ */
+export const SAPPER_ARM_TIME = 0.9
 
 /** §8.4 — Aim assist is visible reticle magnetism, never bullet redirection. */
 export const ASSIST_DEFAULT_DESKTOP = 0.35
@@ -589,6 +657,19 @@ export const RADIUS_INTERCEPTOR = 1.8
 export const RADIUS_SENTINEL = 4.0
 
 /**
+ * The late archetypes (§7.3, waves 8–12 and Endless).
+ *
+ * Every radius here is distinct from every other by at least 0.4 u, and the
+ * order is the read order: a Carrier is unmistakably the biggest thing in the
+ * sky, a Sapper unmistakably the smallest. `models.test.ts` asserts the whole
+ * ordering, because six silhouettes is the point at which "you can tell them
+ * apart" stops being obvious and starts needing a test.
+ */
+export const RADIUS_CARRIER = 5.2
+export const RADIUS_WARDEN = 3.6
+export const RADIUS_SAPPER = 1.5
+
+/**
  * How far a hostile's rendered hull may reach past its collision sphere.
  *
  * Every enemy model is scaled so its furthest vertex sits at `radius ×
@@ -653,6 +734,19 @@ export const SCORE_HARVESTER_AIRBORNE = 150
 export const SCORE_HARVESTER_LANDED = 80
 export const SCORE_INTERCEPTOR = 100
 export const SCORE_SENTINEL = 250
+
+/**
+ * The late archetypes.
+ *
+ * A Carrier outscores everything because killing one is the only kill in the
+ * game that *prevents future work* — the same reasoning that pays 150 for an
+ * airborne Harvester and 80 for a landed one. A Sapper pays modestly and on a
+ * deadline: it is worth stopping, but the reward for stopping it is mostly that
+ * the outpost still exists.
+ */
+export const SCORE_CARRIER = 450
+export const SCORE_WARDEN = 300
+export const SCORE_SAPPER = 120
 export const SCORE_OUTPOST_SURVIVED = 400
 export const SCORE_WAVE_ALL_INTACT = 800
 export const SCORE_NO_DAMAGE_WAVE = 300

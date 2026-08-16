@@ -16,9 +16,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   ENEMY_MODEL_SLACK,
+  RADIUS_CARRIER,
   RADIUS_HARVESTER,
   RADIUS_INTERCEPTOR,
+  RADIUS_SAPPER,
   RADIUS_SENTINEL,
+  RADIUS_WARDEN,
 } from '@/game/data/constants'
 import { Geometries, reachFromOrigin } from '@/render/geometry/shapes'
 
@@ -26,6 +29,9 @@ const ARCHETYPES = [
   { name: 'Harvester', geometry: () => Geometries.Harvester, radius: RADIUS_HARVESTER },
   { name: 'Interceptor', geometry: () => Geometries.Interceptor, radius: RADIUS_INTERCEPTOR },
   { name: 'Sentinel', geometry: () => Geometries.Sentinel, radius: RADIUS_SENTINEL },
+  { name: 'Sapper', geometry: () => Geometries.Sapper, radius: RADIUS_SAPPER },
+  { name: 'Warden', geometry: () => Geometries.Warden, radius: RADIUS_WARDEN },
+  { name: 'Carrier', geometry: () => Geometries.Carrier, radius: RADIUS_CARRIER },
 ] as const
 
 describe('a hostile is the size of its hitbox', () => {
@@ -46,11 +52,38 @@ describe('a hostile is the size of its hitbox', () => {
   }
 
   it('keeps the archetypes in their designed size order', () => {
-    // Sentinel is the heavy, Interceptor the light hunter. If a retune ever
-    // inverts this the silhouettes stop reading, whatever their shapes are.
-    const [harvester, interceptor, sentinel] = ARCHETYPES.map((a) => reachFromOrigin(a.geometry()))
-    expect(sentinel).toBeGreaterThan(harvester as number)
-    expect(harvester).toBeGreaterThan(interceptor as number)
+    // A Carrier is the biggest thing in the sky and a Sapper the smallest, and
+    // both facts are load-bearing: a Carrier has to be identifiable from further
+    // away than anything else because its decision must be made early, and a
+    // Sapper's fragility has to be legible at a glance. If a retune ever inverts
+    // any of this the silhouettes stop reading, whatever their shapes are.
+    const size = Object.fromEntries(
+      ARCHETYPES.map((a) => [a.name, reachFromOrigin(a.geometry())]),
+    ) as Record<(typeof ARCHETYPES)[number]['name'], number>
+
+    const descending = ['Carrier', 'Sentinel', 'Warden', 'Harvester', 'Interceptor', 'Sapper'] as const
+    for (let i = 1; i < descending.length; i++) {
+      const bigger = descending[i - 1] as (typeof descending)[number]
+      const smaller = descending[i] as (typeof descending)[number]
+      expect(size[bigger], `${bigger} should be larger than ${smaller}`).toBeGreaterThan(size[smaller])
+    }
+  })
+
+  it('separates every pair of silhouettes by enough to tell apart at 40 px', () => {
+    // Six archetypes is the point at which "you can tell them apart" stops being
+    // self-evident. Two hostiles within a few percent of each other in size have
+    // to be distinguished by shape alone in peripheral vision, which is a much
+    // weaker signal than the size difference the player also gets for free.
+    const sizes = ARCHETYPES.map((a) => ({ name: a.name, reach: reachFromOrigin(a.geometry()) }))
+    for (let i = 0; i < sizes.length; i++) {
+      for (let j = i + 1; j < sizes.length; j++) {
+        const a = sizes[i]
+        const b = sizes[j]
+        if (a === undefined || b === undefined) continue
+        const ratio = Math.max(a.reach, b.reach) / Math.min(a.reach, b.reach)
+        expect(ratio, `${a.name} vs ${b.name}`).toBeGreaterThan(1.1)
+      }
+    }
   })
 })
 

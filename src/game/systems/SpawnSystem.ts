@@ -19,6 +19,9 @@ import { arcDistance } from '../math/spherical.ts'
 import { spawnHarvester } from '../entities/Harvester.ts'
 import { spawnInterceptor } from '../entities/Interceptor.ts'
 import { spawnSentinel } from '../entities/Sentinel.ts'
+import { spawnSapper } from '../entities/Sapper.ts'
+import { spawnWarden } from '../entities/Warden.ts'
+import { spawnCarrier } from '../entities/Carrier.ts'
 import { beginWave as resetOutpostWave } from '../entities/Outpost.ts'
 import { beginWaveScoring } from './ScoreSystem.ts'
 import { WAVES, waveDefinition, type SpatialSpread } from '../data/waves.ts'
@@ -81,14 +84,36 @@ export function startWave(world: World, waveNumber: number): void {
   const targets = chooseTargets(world, definition.threatened, definition.spread)
   for (const index of targets) wave.targets.push(index)
 
-  // Harvesters first, so the clock starts and the player has something to race.
+  const spread = Math.max(1, targets.length)
+
+  // Carriers first in the queue, and deliberately so.
+  //
+  // A Carrier is the wave's *source*: it launches a Harvester every eleven
+  // seconds for as long as it lives, so every second it spends waiting in the
+  // queue is a Harvester the wave never produces. Releasing it last would make
+  // the archetype quietly weaker the longer the queue in front of it was, which
+  // is difficulty by accident rather than by authorship — the exact failure the
+  // cap-and-queue rule exists to prevent.
+  for (let i = 0; i < definition.carriers; i++) {
+    enqueue(EnemyKind.Carrier, targets[i % spread] ?? -1)
+  }
+  // Wardens next, because everything behind them is unkillable while they live.
+  for (let i = 0; i < definition.wardens; i++) {
+    enqueue(EnemyKind.Warden, targets[i % spread] ?? -1)
+  }
+  // Harvesters, so the clock starts and the player has something to race.
   for (const index of targets) {
     for (let i = 0; i < definition.harvestersPerOutpost; i++) enqueue(EnemyKind.Harvester, index)
   }
   // One Sentinel per threatened outpost, up to the wave's allowance.
   for (let i = 0; i < definition.sentinels; i++) {
-    const index = targets[i % Math.max(1, targets.length)]
-    enqueue(EnemyKind.Sentinel, index ?? -1)
+    enqueue(EnemyKind.Sentinel, targets[i % spread] ?? -1)
+  }
+  // Sappers interleave with the Interceptors rather than arriving as a block: a
+  // deadline the player can learn to expect at a fixed point in the wave is a
+  // schedule, not a deadline.
+  for (let i = 0; i < definition.sappers; i++) {
+    enqueue(EnemyKind.Sapper, targets[i % spread] ?? -1)
   }
   for (let i = 0; i < definition.interceptors; i++) enqueue(EnemyKind.Interceptor, -1)
 
@@ -153,6 +178,20 @@ function release(world: World): void {
     case EnemyKind.Sentinel:
       spawnSentinel(world, slot, target)
       break
+    case EnemyKind.Warden:
+      spawnWarden(world, slot, target)
+      break
+    case EnemyKind.Carrier:
+      spawnCarrier(world, slot, target)
+      break
+    case EnemyKind.Sapper: {
+      // Same entry construction as the Harvester, over a narrower arc: a Sapper
+      // comes in flatter and closer to its target, so its approach reads as a
+      // run rather than as a patient descent.
+      const entry = world.rng.range(0.4, 0.9) * (world.rng.next() < 0.5 ? -1 : 1)
+      spawnSapper(world, slot, target, entry)
+      break
+    }
     default: {
       // Interceptors enter near the player but never on top of them: appearing
       // inside the player's blind spot would be a hit they could not have read.

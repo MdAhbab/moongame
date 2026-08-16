@@ -12,7 +12,7 @@ import { stepWorld, advanceWave } from './step.ts'
 import { formatSeed, hashString, Random, waveSeed } from './Random.ts'
 import { clearInput } from '../systems/InputSystem.ts'
 import { resetSpawner, startWave } from '../systems/SpawnSystem.ts'
-import { accuracy, accuracyBonus, settleWave } from '../systems/ScoreSystem.ts'
+import { accuracy, accuracyBonus, settleWave, totalKills } from '../systems/ScoreSystem.ts'
 import { arcDistance } from '../math/spherical.ts'
 import type { OutpostTimelineEntry, RunSummary, WaveSummary } from './readModel.ts'
 import { BRIEFING_DURATION, HULL_MAX, R, SIM_VERSION, V_CRUISE, WAVE_COUNT } from '../data/constants.ts'
@@ -311,7 +311,7 @@ export class Simulation {
       victory: world.phase.kind === 'RunOver' && world.phase.victory,
       duration: world.time,
       outpostsRemaining: survivingOutposts(world),
-      totalKills: world.score.killsHarvester + world.score.killsInterceptor + world.score.killsSentinel,
+      totalKills: totalKills(world.score),
       accuracy: accuracy(world),
       waves: this.summaries.slice(),
     }
@@ -347,6 +347,9 @@ function buildWaveSummary(world: World): WaveSummary {
     killsHarvester: world.score.killsHarvester,
     killsInterceptor: world.score.killsInterceptor,
     killsSentinel: world.score.killsSentinel,
+    killsSapper: world.score.killsSapper,
+    killsWarden: world.score.killsWarden,
+    killsCarrier: world.score.killsCarrier,
     shots: world.score.shots,
     hits: world.score.hits,
     accuracy: accuracy(world),

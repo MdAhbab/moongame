@@ -105,6 +105,28 @@ export function tryResupply(world: World, outpost: Outpost): boolean {
   return true
 }
 
+/**
+ * Takes integrity off an outpost in one stroke, and settles the consequences.
+ *
+ * The drain is continuous and owned by `DrainSystem`; this is the *discrete*
+ * path, for the Sapper (§7.3), which does its damage all at once on impact.
+ * Routed through here rather than written into `integrity` directly for the same
+ * reason every enemy death goes through `damageEnemy`: an outpost taken to zero
+ * by a raw assignment would sit at zero with its status still reading
+ * "Threatened", never emit `OutpostLost`, never count toward the run's loss
+ * tally, and never end the run when it was the eighth.
+ *
+ * Difficulty scaling is applied by the *caller*, not here, because the
+ * accessibility axis this belongs to is Drain Rate (§10.5) and only the caller
+ * knows whether its damage is drain-shaped.
+ */
+export function damageOutpost(world: World, outpost: Outpost, amount: number): void {
+  if (outpost.status === 'Lost' || amount <= 0) return
+  outpost.integrity = Math.max(0, outpost.integrity - amount)
+  if (outpost.threatenedAt < 0) outpost.threatenedAt = world.time
+  refreshStatus(world, outpost)
+}
+
 /** Clears per-wave bookkeeping without resetting integrity — damage persists. */
 export function beginWave(outpost: Outpost): void {
   outpost.threats = 0

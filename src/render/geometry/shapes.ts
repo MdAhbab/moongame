@@ -3,9 +3,12 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { at, requireIndex } from './arrays.ts'
 import {
   ENEMY_MODEL_SLACK,
+  RADIUS_CARRIER,
   RADIUS_HARVESTER,
   RADIUS_INTERCEPTOR,
+  RADIUS_SAPPER,
   RADIUS_SENTINEL,
+  RADIUS_WARDEN,
 } from '../../game/data/constants.ts'
 import { SENTINEL_SHIELD_HALF_ANGLE } from '../../game/data/enemies.ts'
 
@@ -469,6 +472,182 @@ export const Geometries = {
     glow.push(eye)
 
     return fitToReach(shell(hull, glow, 'Sentinel'), RADIUS_SENTINEL * ENEMY_MODEL_SLACK)
+  },
+
+  /**
+   * Sapper — "small forward-swept wedge, no cockpit" (§7.3).
+   *
+   * Local **+Z is the nose**, like the Interceptor. Everything about the shape
+   * is an argument against confusing the two at a glance, because confusing them
+   * is expensive: an Interceptor is a fight you can decline and a Sapper is a
+   * deadline you cannot.
+   *
+   * So the sweep is *forward* rather than back — the wings rake toward the nose,
+   * which no other hostile does and which the eye reads as a wedge driving into
+   * something. There is no fuselage behind the wing and no tail at all, so the
+   * silhouette ends where the wing ends. And it is tiny: at `RADIUS_SAPPER` it
+   * is 17% smaller than an Interceptor, the smallest thing in the sky.
+   */
+  get Sapper(): THREE.BufferGeometry {
+    const hull: THREE.BufferGeometry[] = []
+    const glow: THREE.BufferGeometry[] = []
+
+    // A four-sided spike: hard chines, no round surfaces anywhere on it.
+    const spike = new THREE.ConeGeometry(0.85, 4.4, 4)
+    spike.rotateX(Math.PI / 2)
+    spike.rotateZ(Math.PI / 4)
+    spike.translate(0, 0, 0.9)
+    hull.push(spike)
+
+    // Forward sweep: the leading edge rakes *toward* the nose. The Interceptor's
+    // does the opposite, and that one inversion is the whole read.
+    const wing = plate(
+      [
+        [0.4, -1.6],
+        [2.9, 1.5],
+        [2.9, 0.7],
+        [0.4, -2.3],
+      ],
+      0.22,
+    )
+    hull.push(wing, mirrorX(wing))
+
+    const collar = new THREE.CylinderGeometry(0.62, 0.62, 0.5, 4)
+    collar.rotateX(Math.PI / 2)
+    collar.rotateZ(Math.PI / 4)
+    collar.translate(0, 0, -1.5)
+    hull.push(collar)
+
+    // The warhead, lit and sitting proud at the tip. This is the arming flare's
+    // anchor — the render bridge drives the instance colour from the phase, and
+    // this is the part of the model that has to catch it.
+    const warhead = new THREE.SphereGeometry(0.5, 10, 8)
+    warhead.translate(0, 0, 2.3)
+    glow.push(warhead)
+
+    const nozzle = new THREE.CylinderGeometry(0.34, 0.42, 0.4, 8)
+    nozzle.rotateX(Math.PI / 2)
+    nozzle.translate(0, 0, -1.85)
+    glow.push(nozzle)
+
+    return fitToReach(shell(hull, glow, 'Sapper'), RADIUS_SAPPER * ENEMY_MODEL_SLACK)
+  },
+
+  /**
+   * Warden — "three-armed ring on a slim column" (§7.3).
+   *
+   * Local **+Y is up**, away from the moon's centre.
+   *
+   * Radial symmetry, and that is the message. A Sentinel is emphatically
+   * *directional* — a broad plate with a front and a back, which is how a player
+   * knows to fly around it. A Warden has no front. Three identical arms at 120°
+   * on a torus say "this thing works the same from every angle", which is
+   * exactly the rule its field obeys, so the silhouette teaches the counter
+   * before the player has been told it: flanking is not the answer here.
+   *
+   * The emitter head on each arm is lit, so the three points of the field are
+   * visible against the shell `EnemyInstances` draws around it.
+   */
+  get Warden(): THREE.BufferGeometry {
+    const hull: THREE.BufferGeometry[] = []
+    const glow: THREE.BufferGeometry[] = []
+
+    const column = new THREE.CylinderGeometry(0.75, 1.05, 4.6, 6)
+    hull.push(column)
+
+    const ring = new THREE.TorusGeometry(2.7, 0.32, 6, 18)
+    ring.rotateX(Math.PI / 2)
+    hull.push(ring)
+
+    const cap = new THREE.ConeGeometry(1.15, 1.5, 6)
+    cap.translate(0, 2.8, 0)
+    hull.push(cap)
+
+    for (let i = 0; i < 3; i++) {
+      const bearing = (i / 3) * Math.PI * 2
+
+      const arm = new THREE.BoxGeometry(0.42, 0.42, 2.4)
+      arm.translate(0, 0.2, 3.6)
+      arm.rotateY(bearing)
+      hull.push(arm)
+
+      const emitter = new THREE.OctahedronGeometry(0.62, 0)
+      emitter.translate(0, 0.2, 4.7)
+      emitter.rotateY(bearing)
+      glow.push(emitter)
+    }
+
+    const collar = new THREE.CylinderGeometry(1.35, 1.35, 0.4, 6)
+    collar.translate(0, -1.1, 0)
+    hull.push(collar)
+
+    return fitToReach(shell(hull, glow, 'Warden'), RADIUS_WARDEN * ENEMY_MODEL_SLACK)
+  },
+
+  /**
+   * Carrier — "broad slab hull with an open launch bay underneath" (§7.3).
+   *
+   * Local **+Y is up**, so the bay faces the moon it is seeding.
+   *
+   * The largest silhouette in the game, and the only one with a *hole* in it.
+   * That opening is doing real work: a player who has learned what a Carrier
+   * does needs to identify one from further away than anything else on screen,
+   * because the decision it poses — pay the seconds now or pay them every trip
+   * afterwards — has to be made early to be worth making at all. A gap in a slab
+   * survives being small on screen better than any amount of surface detail.
+   *
+   * Built as four rails around the void rather than as a box with a recess: at
+   * this size a recess reads as a dark patch of paint, and a genuine opening
+   * shows the sky through it as the Carrier yaws.
+   */
+  get Carrier(): THREE.BufferGeometry {
+    const hull: THREE.BufferGeometry[] = []
+    const glow: THREE.BufferGeometry[] = []
+
+    // The slab, as four rails around an open bay.
+    for (const [dx, dz, sx, sz] of [
+      [0, 3.5, 8.4, 1.4],
+      [0, -3.5, 8.4, 1.4],
+      [3.5, 0, 1.4, 5.6],
+      [-3.5, 0, 1.4, 5.6],
+    ] as const) {
+      const rail = new THREE.BoxGeometry(sx, 1.6, sz)
+      rail.translate(dx, 0, dz)
+      hull.push(rail)
+    }
+
+    // Spine over the top, so the hull has a readable "up" from a distance.
+    const spine = new THREE.BoxGeometry(2.2, 1.5, 7.2)
+    spine.translate(0, 1.3, 0)
+    hull.push(spine)
+
+    const bridge = new THREE.CylinderGeometry(1.05, 1.35, 1.4, 6)
+    bridge.translate(0, 2.4, -1.6)
+    hull.push(bridge)
+
+    // Four engine pods, outboard and low, giving the corners a shape.
+    for (const side of [-1, 1] as const) {
+      for (const front of [-1, 1] as const) {
+        const pod = new THREE.CylinderGeometry(0.72, 0.9, 2.2, 8)
+        pod.rotateX(Math.PI / 2)
+        pod.translate(side * 4.2, -0.5, front * 2.6)
+        hull.push(pod)
+
+        const flame = new THREE.CylinderGeometry(0.5, 0.34, 0.4, 8)
+        flame.rotateX(Math.PI / 2)
+        flame.translate(side * 4.2, -0.5, front * 3.75)
+        glow.push(flame)
+      }
+    }
+
+    // The bay itself: a lit rectangle on the underside, so a Carrier overhead is
+    // identifiable from directly below — which is where a player fighting the
+    // Harvesters it launched will be looking from.
+    const bay = new THREE.BoxGeometry(5.4, 0.16, 4.4)
+    bay.translate(0, -0.85, 0)
+    glow.push(bay)
+
+    return fitToReach(shell(hull, glow, 'Carrier'), RADIUS_CARRIER * ENEMY_MODEL_SLACK)
   },
 
   get OutpostShell(): THREE.BufferGeometry {

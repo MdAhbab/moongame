@@ -39,8 +39,30 @@ import {
 /* Enumerations                                                        */
 /* ------------------------------------------------------------------ */
 
-/** §7.3 — three archetypes, distinguished by silhouette and behaviour first. */
-export const EnemyKind = { Harvester: 0, Interceptor: 1, Sentinel: 2 } as const
+/**
+ * §7.3 — six archetypes, distinguished by silhouette and behaviour first.
+ *
+ * **The numeric values are indices into `ARCHETYPES`** in `data/enemies.ts`, and
+ * `archetypeOf` looks them up positionally. Inserting a kind in the middle would
+ * renumber every one after it and silently repoint every archetype — so new
+ * kinds are appended, in the order they enter the campaign.
+ *
+ * The first three carry the campaign's teaching arc (waves 1–6): the clock, the
+ * pressure, the wall. The last three arrive in the back third, and each exists
+ * to ask a question the first three cannot:
+ *
+ *   Sapper   the deadline  — a threat you cannot arrive late to
+ *   Warden   the priority  — a threat that makes the others unkillable
+ *   Carrier  the source    — a threat that undoes work you have already done
+ */
+export const EnemyKind = {
+  Harvester: 0,
+  Interceptor: 1,
+  Sentinel: 2,
+  Sapper: 3,
+  Warden: 4,
+  Carrier: 5,
+} as const
 export type EnemyKindValue = (typeof EnemyKind)[keyof typeof EnemyKind]
 
 /** Behaviour phase within an enemy's lifetime. */
@@ -78,6 +100,27 @@ export const EnemyPhase = {
    * everything into it while it recovers.
    */
   Exposed: 7,
+  /**
+   * A Sapper closing on its outpost, before the terminal dive (§7.3).
+   *
+   * Distinct from `Inbound` because a Sapper's approach is *flat and fast* while
+   * a Harvester's is a patient arc, and the two must not be told apart only by
+   * the kind field: the render bridge reads the phase to decide whether to draw
+   * the arming flare.
+   */
+  Closing: 8,
+  /**
+   * Armed, committed, and about to detonate on the surface.
+   *
+   * The last `SAPPER_ARM_TIME` seconds of a Sapper's life. It cannot be steered
+   * away from and it is at its most visible — which is the point: the deadline
+   * has to be *seen* expiring, not merely expire.
+   */
+  Arming: 9,
+  /** A Warden holding station with its field up (§7.3). */
+  Projecting: 10,
+  /** A Carrier on station, cycling its launch clock (§7.3). */
+  Launching: 11,
 } as const
 export type EnemyPhaseValue = (typeof EnemyPhase)[keyof typeof EnemyPhase]
 
@@ -157,6 +200,28 @@ export const GameEvent = {
   DronesRecalled: 30,
   /** A drone was destroyed. `a` is its slot. */
   DroneDestroyed: 31,
+  /**
+   * A Sapper has armed and committed to its terminal dive (§7.3).
+   *
+   * `a` is the outpost it is aimed at. Its own event rather than a phase the
+   * consumers poll, because the *moment* is the tell — the audio cue and the
+   * alert band both have to fire once, on the frame it happens, and a polled
+   * phase gives them no way to tell "it just armed" from "it is still armed".
+   */
+  SapperArmed: 32,
+  /** A Sapper reached its outpost. `a` is the outpost index. */
+  SapperDetonated: 33,
+  /** A Carrier launched a Harvester. `a` is the outpost it was launched at. */
+  CarrierLaunch: 34,
+  /**
+   * A shot was absorbed by a Warden's field (§7.3).
+   *
+   * Emitted at the point of impact so the hit reads as *blocked* rather than as
+   * missed. Damage failing without a signal is the fault the Sentinel's visible
+   * shield arc exists to prevent, and a radial field has no silhouette to make
+   * that obvious on its own.
+   */
+  WardenAbsorbed: 35,
 } as const
 export type GameEventType = (typeof GameEvent)[keyof typeof GameEvent]
 
@@ -624,6 +689,9 @@ export interface ScoreState {
   killsHarvester: number
   killsInterceptor: number
   killsSentinel: number
+  killsSapper: number
+  killsWarden: number
+  killsCarrier: number
   outpostsSaved: number
   outpostsLost: number
 }
@@ -1010,6 +1078,9 @@ export function createScoreState(): ScoreState {
     killsHarvester: 0,
     killsInterceptor: 0,
     killsSentinel: 0,
+    killsSapper: 0,
+    killsWarden: 0,
+    killsCarrier: 0,
     outpostsSaved: 0,
     outpostsLost: 0,
   }
@@ -1190,6 +1261,9 @@ export function resetWorldForRun(world: World): void {
   score.killsHarvester = freshScore.killsHarvester
   score.killsInterceptor = freshScore.killsInterceptor
   score.killsSentinel = freshScore.killsSentinel
+  score.killsSapper = freshScore.killsSapper
+  score.killsWarden = freshScore.killsWarden
+  score.killsCarrier = freshScore.killsCarrier
   score.outpostsSaved = freshScore.outpostsSaved
   score.outpostsLost = freshScore.outpostsLost
 

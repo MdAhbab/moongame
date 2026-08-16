@@ -209,6 +209,12 @@ function enemyMarkerKind(kind: number): MarkerKind {
       return 'Interceptor'
     case EnemyKind.Sentinel:
       return 'Sentinel'
+    case EnemyKind.Sapper:
+      return 'Sapper'
+    case EnemyKind.Warden:
+      return 'Warden'
+    case EnemyKind.Carrier:
+      return 'Carrier'
     default:
       return 'Harvester'
   }

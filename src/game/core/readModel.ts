@@ -144,7 +144,23 @@ export function createHudFrame(): HudFrame {
 /* Threat Ring markers (§12.2 P1, §20.7)                               */
 /* ------------------------------------------------------------------ */
 
-export type MarkerKind = 'Harvester' | 'Interceptor' | 'Sentinel' | 'Outpost'
+/**
+ * What a Threat Ring marker is showing.
+ *
+ * One per archetype plus the outposts. Six hostile glyphs is a lot to ask a
+ * player to learn, so the ring does not ask: the glyph carries *role*, not
+ * identity — a chevron descends, a dart hunts, a bar blocks — and the three late
+ * archetypes extend the same vocabulary rather than adding a new one. See
+ * `ThreatRing.Glyph`, where the shapes and the reasoning live together.
+ */
+export type MarkerKind =
+  | 'Harvester'
+  | 'Interceptor'
+  | 'Sentinel'
+  | 'Sapper'
+  | 'Warden'
+  | 'Carrier'
+  | 'Outpost'
 export type MarkerUrgency = 'safe' | 'threatened' | 'critical'
 
 export interface ThreatMarker {
@@ -286,6 +302,9 @@ export interface WaveSummary {
   killsHarvester: number
   killsInterceptor: number
   killsSentinel: number
+  killsSapper: number
+  killsWarden: number
+  killsCarrier: number
   shots: number
   hits: number
   accuracy: number
