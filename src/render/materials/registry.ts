@@ -8,7 +8,20 @@ const regolithMat = new THREE.MeshStandardMaterial({
   metalness: 0.0,
 })
 
+/**
+ * Procedural grain/swell intensity. Uniform, so branching on it in the shader
+ * is uniform control flow and `dFdx` stays defined.
+ *
+ * High = both octaves, Medium = mare swell only, Low = albedo maps alone.
+ */
+const regolithDetail = { value: 1 }
+
+export function setRegolithDetail(tier: 'High' | 'Medium' | 'Low'): void {
+  regolithDetail.value = tier === 'High' ? 1 : tier === 'Medium' ? 0.5 : 0
+}
+
 regolithMat.onBeforeCompile = (shader) => {
+  shader.uniforms['uDetail'] = regolithDetail
   shader.vertexShader = shader.vertexShader.replace(
     '#include <common>',
     `#include <common>
@@ -24,6 +37,7 @@ vWorldPos = (modelMatrix * vec4(transformed, 1.0)).xyz;`
     '#include <common>',
     `#include <common>
 varying vec3 vWorldPos;
+uniform float uDetail;
 
 vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
 vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
@@ -103,8 +117,18 @@ float snoise(vec3 v) {
     // sandpaper: at 0.35 the coarse band had a ~3 u wavelength, which subtends
     // about two pixels a kilometre away, and the horizon crawled. At 0.012 it is
     // ~80 u — the swell and hollow of a mare — and holds together to the limb.
-    float gFine   = snoise(vWorldPos * 1.6);
-    float gCoarse = snoise(vWorldPos * 0.012);
+    //
+    // uDetail is a uniform, so this branch is uniform control flow: Low skips
+    // both simplex evaluations, Medium keeps the cheap far swell, High pays
+    // for grain underfoot. Derivatives of gHeight below stay defined.
+    float gFine = 0.0;
+    float gCoarse = 0.0;
+    if (uDetail > 0.99) {
+      gFine = snoise(vWorldPos * 1.6);
+      gCoarse = snoise(vWorldPos * 0.012);
+    } else if (uDetail > 0.01) {
+      gCoarse = snoise(vWorldPos * 0.012);
+    }
 
     // Unitless, for tinting.
     float gDetail = gFine * gNearBlend + gCoarse * 0.85 * gFarBlend;

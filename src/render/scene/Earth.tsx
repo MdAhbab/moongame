@@ -28,7 +28,7 @@
  *    the sky. Two bodies at different distances is what gives a sky depth; one
  *    body is a backdrop.
  */
-import { useMemo } from 'react'
+import { useMemo, useEffect } from 'react'
 import * as THREE from 'three'
 import { registry } from '../disposal.ts'
 import { Random } from '../../game/core/Random.ts'
@@ -122,6 +122,15 @@ export function Earth({ palette }: { palette: WorldPalette }) {
     return { geometry, material, radius }
   }, [palette.primary, palette.earthshine, palette.primarySize, sunDir, hasAtmosphere, hasRings])
 
+  useEffect(() => {
+    const surface = primary.material.uniforms['tSurface']?.value as THREE.Texture | undefined
+    return () => {
+      registry.release(primary.geometry)
+      registry.release(primary.material)
+      if (surface) registry.release(surface)
+    }
+  }, [primary])
+
   const atmosphere = useMemo(() => {
     if (!hasAtmosphere) return null
     const geometry = new THREE.SphereGeometry(46 * palette.primarySize, 32, 32)
@@ -141,6 +150,14 @@ export function Earth({ palette }: { palette: WorldPalette }) {
     registry.track(material)
     return { geometry, material }
   }, [palette.rim, palette.primarySize, sunDir, hasAtmosphere])
+
+  useEffect(() => {
+    if (atmosphere === null) return
+    return () => {
+      registry.release(atmosphere.geometry)
+      registry.release(atmosphere.material)
+    }
+  }, [atmosphere])
 
   const rings = useMemo(() => {
     if (!hasRings) return null
@@ -165,6 +182,14 @@ export function Earth({ palette }: { palette: WorldPalette }) {
     return { geometry, material }
   }, [palette.earthshine, primary.radius, sunDir, hasRings])
 
+  useEffect(() => {
+    if (rings === null) return
+    return () => {
+      registry.release(rings.geometry)
+      registry.release(rings.material)
+    }
+  }, [rings])
+
   const companion = useMemo(() => {
     const geometry = new THREE.SphereGeometry(11, 24, 24)
     const material = new THREE.MeshStandardMaterial({
@@ -177,6 +202,14 @@ export function Earth({ palette }: { palette: WorldPalette }) {
     registry.track(material)
     return { geometry, material }
   }, [])
+
+  useEffect(() => {
+    return () => {
+      registry.release(companion.geometry)
+      registry.release(companion.material)
+      if (companion.material.map) registry.release(companion.material.map)
+    }
+  }, [companion])
 
   return (
     <group>

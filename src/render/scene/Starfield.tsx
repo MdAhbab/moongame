@@ -36,7 +36,7 @@
  * `density` is the *world's*, not a quality setting: Ashfall's ash genuinely
  * hides its sky, and its near-bare star field is that fact rendered.
  */
-import { useMemo } from 'react'
+import { useMemo, useEffect } from 'react'
 import * as THREE from 'three'
 import { Random } from '../../game/core/Random.ts'
 import { registry } from '../disposal.ts'
@@ -104,7 +104,15 @@ interface Layer {
   material: THREE.PointsMaterial
 }
 
-export function Starfield({ seed, density = 1 }: { seed: number; density?: number }) {
+export function Starfield({
+  seed,
+  density = 1,
+  tier = 'High',
+}: {
+  seed: number
+  density?: number
+  tier?: 'High' | 'Medium' | 'Low'
+}) {
   const layers = useMemo(() => {
     const rng = new Random(seed)
 
@@ -222,6 +230,10 @@ export function Starfield({ seed, density = 1 }: { seed: number; density?: numbe
     })()
 
     const scale = Math.max(0.08, density)
+    const nebulaCount =
+      tier === 'Low' ? 0 : tier === 'Medium'
+        ? Math.max(40, Math.round(120 * scale))
+        : Math.max(80, Math.round(300 * scale))
 
     return {
       // Everywhere, faint. The floor keeps even Ashfall's sky from being empty.
@@ -250,29 +262,43 @@ export function Starfield({ seed, density = 1 }: { seed: number; density?: numbe
         uniformDirection,
         () => 0.85 + rng.next() * 0.15,
       ),
-      // Diffuse dust along the band.
-      //
-      // Many small overlapping puffs, not a few large ones. The first attempt
-      // used 90 clouds at 260 units and they rendered as half a dozen distinct
-      // grey smudges pasted on the sky — an object where there should have been
-      // a texture. Galactic dust has no features at this scale; what the eye
-      // picks up is a *gradient*, and a gradient is what you get from hundreds
-      // of faint overlapping sprites and from nothing else.
-      nebulae: make(
-        Math.max(80, Math.round(900 * scale)),
-        70,
-        0.15,
-        (out) => { bandDirection(out, BAND_SIGMA * 1.15) },
-        () => 0.11 + rng.next() * 0.16,
-        nebulaTexture,
-        dustColour,
-      ),
+      // Diffuse dust along the band. Capped by quality tier: 900 additive
+      // sprites at 70 px is a fill-rate tax the Low tier cannot afford, and
+      // the sky still reads as a sky without them.
+      nebulae: nebulaCount === 0
+        ? null
+        : make(
+          nebulaCount,
+          70,
+          0.15,
+          (out) => { bandDirection(out, BAND_SIGMA * 1.15) },
+          () => 0.11 + rng.next() * 0.16,
+          nebulaTexture,
+          dustColour,
+        ),
+      nebulaTexture,
     }
-  }, [seed, density])
+  }, [seed, density, tier])
+
+  useEffect(() => {
+    return () => {
+      const disposeLayer = (layer: Layer): void => {
+        registry.release(layer.geometry)
+        registry.release(layer.material)
+      }
+      disposeLayer(layers.field)
+      disposeLayer(layers.band)
+      disposeLayer(layers.bright)
+      if (layers.nebulae !== null) disposeLayer(layers.nebulae)
+      registry.release(layers.nebulaTexture)
+    }
+  }, [layers])
 
   return (
     <group>
-      <points geometry={layers.nebulae.geometry} material={layers.nebulae.material} renderOrder={-2} />
+      {layers.nebulae !== null && (
+        <points geometry={layers.nebulae.geometry} material={layers.nebulae.material} renderOrder={-2} />
+      )}
       <points geometry={layers.band.geometry} material={layers.band.material} renderOrder={-1} />
       <points geometry={layers.field.geometry} material={layers.field.material} renderOrder={-1} />
       <points geometry={layers.bright.geometry} material={layers.bright.material} renderOrder={-1} />

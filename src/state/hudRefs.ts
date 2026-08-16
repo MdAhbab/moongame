@@ -135,6 +135,8 @@ export const hudRefs: HudRefs = {
   mapMarkers: [],
 }
 
+const lastScore = { value: Number.NaN, text: '0' }
+
 /**
  * The single function the render bridge (Task 1) calls each frame to mutate the DOM.
  */
@@ -142,7 +144,13 @@ export function writeHud(frame: HudFrame, markers: ThreatMarker[]) {
   // Update HUD text values
   if (hudRefs.hullText) hudRefs.hullText.textContent = String(Math.ceil(frame.hull))
   if (hudRefs.heatText) hudRefs.heatText.textContent = String(Math.ceil(frame.heat))
-  if (hudRefs.scoreText) hudRefs.scoreText.textContent = frame.score.toLocaleString()
+  if (hudRefs.scoreText) {
+    if (frame.score !== lastScore.value) {
+      lastScore.value = frame.score
+      lastScore.text = frame.score.toLocaleString()
+    }
+    hudRefs.scoreText.textContent = lastScore.text
+  }
   if (hudRefs.comboText) hudRefs.comboText.textContent = `×${frame.combo}`
   if (hudRefs.speedText) hudRefs.speedText.textContent = String(Math.round(frame.speed))
   if (hudRefs.altitudeText) hudRefs.altitudeText.textContent = String(Math.ceil(frame.altitude))
@@ -157,10 +165,10 @@ export function writeHud(frame: HudFrame, markers: ThreatMarker[]) {
   if (hudRefs.bombText) {
     if (frame.bombCooldown <= 0) {
       hudRefs.bombText.textContent = 'READY'
-      hudRefs.bombText.style.color = '#38ef7d'
+      hudRefs.bombText.style.color = 'var(--friendly)'
     } else {
       hudRefs.bombText.textContent = `${frame.bombCooldown.toFixed(1)}s`
-      hudRefs.bombText.style.color = '#ffaa30'
+      hudRefs.bombText.style.color = 'var(--caution)'
     }
   }
   if (hudRefs.bombFill) {
@@ -175,7 +183,7 @@ export function writeHud(frame: HudFrame, markers: ThreatMarker[]) {
   if (hudRefs.engineModeText) {
     if (frame.engineCut) {
       hudRefs.engineModeText.textContent = 'DRIFT FLOAT [ENGINE OFF]'
-      hudRefs.engineModeText.style.color = '#00e5ff'
+      hudRefs.engineModeText.style.color = 'var(--friendly)'
     } else {
       hudRefs.engineModeText.textContent = 'PROPULSION [ACTIVE]'
       hudRefs.engineModeText.style.color = 'var(--text-secondary)'

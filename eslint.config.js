@@ -95,18 +95,35 @@ export default tseslint.config(
     },
   },
 
-  /* The render layer may read simulation state but never mutate it. */
+  /* React hooks apply to both presentation trees. */
   {
     files: ['src/render/**/*.{ts,tsx}', 'src/ui/**/*.{ts,tsx}'],
     plugins: { 'react-hooks': reactHooks },
     rules: {
       ...reactHooks.configs.recommended.rules,
+    },
+  },
+
+  /* The render layer may read simulation state but never mutate it, and never
+     import systems — including via relative paths. The UI shell (App) is the
+     one place allowed to project HudSystem into the HUD. */
+  {
+    files: ['src/render/**/*.{ts,tsx}'],
+    rules: {
       'no-restricted-imports': [
         'error',
         {
           patterns: [
             {
-              group: ['@/game/systems/*', '@/game/systems/**'],
+              group: [
+                '@/game/systems/*',
+                '@/game/systems/**',
+                '**/game/systems/*',
+                '**/game/systems/**',
+                '../game/systems/*',
+                '../../game/systems/*',
+                '../../../game/systems/*',
+              ],
               message: 'Presentation layers read the World, they do not run systems (gameplan §30.2).',
             },
           ],

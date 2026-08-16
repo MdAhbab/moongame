@@ -7,6 +7,7 @@
  * in a Node test with a scripted player (§37.2).
  */
 import { createWorld, resetWorldForRun, survivingOutposts, type World } from './World.ts'
+import { GameEvent } from './World.ts'
 import { Loop } from './Loop.ts'
 import { stepWorld, advanceWave } from './step.ts'
 import { formatSeed, hashString, Random, waveSeed } from './Random.ts'
@@ -270,6 +271,32 @@ export class Simulation {
   /** Skips the Briefing beat. It is a courtesy, never a gate (§14.3). */
   skipBriefing(): void {
     if (this.world.phase.kind === 'Briefing') this.world.phase = { kind: 'Playing' }
+  }
+
+  /**
+   * Fits a drafted perk. Perks persist for the run and do not stack, so a
+   * card already in the loadout is a no-op rather than a second copy.
+   *
+   * The shell used to push onto `world.activePerks` itself. That is a
+   * simulation command, and the only way two callers (WaveClear and a future
+   * replay of the draft) can agree is if they share this method.
+   */
+  selectPerk(perkId: string): void {
+    if (this.world.activePerks.includes(perkId)) return
+    this.world.activePerks.push(perkId)
+    this.world.events.emit(GameEvent.PerkSelected, 0, 0)
+  }
+
+  /**
+   * Resolves the post-death legendary offer: fit one of three, or take none.
+   * Clears the offer either way so the phase poll cannot re-open the screen.
+   */
+  resolveLegendary(perkId: string | null): void {
+    if (perkId !== null && !this.world.activePerks.includes(perkId)) {
+      this.world.activePerks.push(perkId)
+      this.world.events.emit(GameEvent.PerkSelected, 1, 0)
+    }
+    this.world.legendaryOffer = []
   }
 
   /**

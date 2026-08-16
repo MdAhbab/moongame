@@ -17,7 +17,6 @@
 import { StrictMode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { Simulation, makeRunSeed } from '../game/core/Simulation.ts'
-import { GameEvent } from '../game/core/World.ts'
 import { hashString } from '../game/core/Random.ts'
 import { bindDeviceInput, releasePointer } from '../platform/deviceInput.ts'
 import { HapticsDirector } from '../platform/haptics.ts'
@@ -77,11 +76,11 @@ const TOAST_DURATION_MS = 5000
 /**
  * Submits a finished run to the replay-verified leaderboard.
  *
- * Fire-and-forget, and deliberately silent on failure. The leaderboard is a
- * bonus on top of a game that is complete without it; a network fault must not
- * delay the Debrief, and there is nothing a player could do about one anyway.
- * The only thing worth saying out loud is success, because a *verified* rank is
- * a different claim from a number the client asserted.
+ * Fire-and-forget. Failure is a toast, not a block: the leaderboard is a
+ * bonus on top of a game that is complete without it, and a network fault
+ * must not delay the Debrief. Success is still the only claim worth naming
+ * as verified, because a rank the server replayed is a different claim from
+ * a number the client asserted.
  *
  * Sends `encodeReplay`'s packed form rather than the JSON: run-length encoding
  * does almost nothing for a mouse player — the virtual stick decays
@@ -121,7 +120,10 @@ function submitRun(simulation: Simulation, finalScore: number): void {
           : `Run verified — rank ${String(result.rank)}.`,
       })
     } catch {
-      // Intentionally silent. See above.
+      useGameStore.getState().setToast({
+        tone: 'warning',
+        message: 'Could not verify this run. The score is still yours locally.',
+      })
     }
   })()
 }
@@ -157,11 +159,7 @@ function Router({
         <LegendaryChoiceScreen
           offer={simulation.world.legendaryOffer}
           onResolve={(perkId) => {
-            if (perkId !== null) {
-              simulation.world.activePerks.push(perkId)
-              simulation.world.events.emit(GameEvent.PerkSelected, 1, 0)
-            }
-            simulation.world.legendaryOffer = []
+            simulation.resolveLegendary(perkId)
           }}
         />
       )
@@ -173,10 +171,7 @@ function Router({
             // Perks persist for the whole run and nothing stacks, so a card is
             // takeable exactly once. The drone bay used to be the exception; it
             // is an ability on a key now.
-            if (!simulation.world.activePerks.includes(perkId)) {
-              simulation.world.activePerks.push(perkId)
-              simulation.world.events.emit(GameEvent.PerkSelected, 0, 0)
-            }
+            simulation.selectPerk(perkId)
           }}
         />
       )
@@ -293,6 +288,8 @@ export function App(): React.JSX.Element {
   const terrainRef = useRef<{ albedo: ImageBitmap; normal: ImageBitmap; ao: ImageBitmap } | null>(null)
   /** The world the current maps were baked for, so a re-bake happens once. */
   const bakedWorldRef = useRef<string | null>(null)
+  /** Bumps when new maps land so Canvas sees them without putting bitmaps in state. */
+  const [terrainEpoch, setTerrainEpoch] = useState(0)
 
   /** Pre-allocated read-model buffers. Created once, mutated in place (Rule 3). */
   const buffers = useMemo(
@@ -459,20 +456,15 @@ export function App(): React.JSX.Element {
    *
    * A worker failure is *not* fatal. The moon renders untextured, which is
    * ugly, but Rule 10's principle holds: nothing should stop someone playing.
+   *
+   * `bakedWorldRef` is set only on success. Setting it at the start of the bake
+   * meant a failed worker marked the world as done forever, and Hangar could
+   * never retry. Old ImageBitmaps are closed only after the new ones land, so
+   * a swap never shows a bare sphere.
    */
   useEffect(() => {
-    // Bakes at boot, and re-bakes whenever the chosen world changes: the maps
-    // *are* the world's surface, so keeping Luna's regolith on Ashfall would
-    // make the world select a label rather than a place. The old textures stay
-    // on screen until the new ones land, so switching never shows a bare sphere.
-    //
-    // Guarding on the baked world rather than on the screen matters. An earlier
-    // version re-entered this effect on every screen change and, on completion,
-    // called `goto('Title')` — so finishing a bake mid-run threw the player back
-    // to the main menu.
     const isBoot = screen === 'Loading'
     if (!isBoot && bakedWorldRef.current === activeWorld.id) return
-    bakedWorldRef.current = activeWorld.id
 
     const store = useGameStore.getState()
     let cancelled = false
@@ -480,11 +472,16 @@ export function App(): React.JSX.Element {
 
     const finish = (): void => {
       if (cancelled) return
-      // Only the boot bake owns navigation. A world swap from the Hangar
-      // replaces the textures underneath whatever screen the player is on.
       if (!isBoot) return
       store.setLoadProgress(1, 'READY')
       useGameStore.getState().goto('Title')
+    }
+
+    const closeMaps = (maps: { albedo: ImageBitmap; normal: ImageBitmap; ao: ImageBitmap } | null): void => {
+      if (maps === null) return
+      maps.albedo.close()
+      maps.normal.close()
+      maps.ao.close()
     }
 
     try {
@@ -493,11 +490,15 @@ export function App(): React.JSX.Element {
         if (cancelled) return
         const message = event.data
         if (message.type === 'progress') {
-          // Three equal stages, so the bar tracks work done rather than time.
+          if (!isBoot) return
           const stageIndex = message.stage === 'albedo' ? 0 : message.stage === 'normal' ? 1 : 2
           store.setLoadProgress((stageIndex + message.fraction) / 3, message.stage.toUpperCase())
         } else if (message.type === 'done') {
+          const previous = terrainRef.current
           terrainRef.current = { albedo: message.albedo, normal: message.normal, ao: message.ao }
+          bakedWorldRef.current = activeWorld.id
+          closeMaps(previous)
+          setTerrainEpoch((n) => n + 1)
           finish()
         } else {
           warn('Terrain bake failed; continuing untextured', message.message)
@@ -508,9 +509,10 @@ export function App(): React.JSX.Element {
         warn('Terrain worker error; continuing untextured', event.message)
         finish()
       }
+      const bakeTier: 'High' | 'Medium' | 'Low' = qualitySetting === 'high' ? 'High' : 'Low'
       worker.postMessage({
         seed: hashString(simulation.world.runSeed),
-        tier: 'High',
+        tier: bakeTier,
         terrain: activeWorld.terrain,
         palette: activeWorld.palette,
       })
@@ -523,7 +525,7 @@ export function App(): React.JSX.Element {
       cancelled = true
       worker?.terminate()
     }
-  }, [screen, simulation, activeWorld])
+  }, [screen, simulation, activeWorld, qualitySetting])
 
   /**
    * Whether the world is allowed to advance.
@@ -796,9 +798,9 @@ export function App(): React.JSX.Element {
               <Canvas
                 world={simulation.world}
                 tier={tier}
-                albedoMap={terrainRef.current?.albedo}
-                normalMap={terrainRef.current?.normal}
-                aoMap={terrainRef.current?.ao}
+                albedoMap={terrainEpoch >= 0 ? terrainRef.current?.albedo : undefined}
+                normalMap={terrainEpoch >= 0 ? terrainRef.current?.normal : undefined}
+                aoMap={terrainEpoch >= 0 ? terrainRef.current?.ao : undefined}
                 onFrame={onFrame}
                 stepping={stepping}
                 skinId={skinId}

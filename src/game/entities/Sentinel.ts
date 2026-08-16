@@ -11,7 +11,8 @@
  * Introduced at Wave 6, after triage itself is understood.
  */
 import { EnemyPhase, GameEvent, type World } from '../core/World.ts'
-import { type Vec3, addScaled, copy, create, cross, dot, length, normalize, scale, sub } from '../math/vec3.ts'
+import { sentinelShieldNormal } from '../core/view.ts'
+import { type Vec3, addScaled, copy, create, dot, length, normalize, scale, sub } from '../math/vec3.ts'
 import { arrive, predictAim } from '../physics/steering.ts'
 import { spawnProjectile } from './Projectile.ts'
 import { SENTINEL, SENTINEL_SHIELD_HALF_ANGLE, SENTINEL_SHIELD_RATE } from '../data/enemies.ts'
@@ -23,8 +24,6 @@ const station: Vec3 = create()
 const aim: Vec3 = create()
 const scratch: Vec3 = create()
 const shieldNormal: Vec3 = create()
-const tangentA: Vec3 = create()
-const tangentB: Vec3 = create()
 
 /** Orbit altitude. High enough to be a landmark, low enough to be a wall. */
 const STATION_ALTITUDE = 40
@@ -79,37 +78,6 @@ export function updateSentinel(world: World, slot: number, dt: number): void {
 
   updateFiring(world, slot, dt)
 }
-
-/**
- * Computes the shield's outward normal into `out`.
- *
- * The plate lies in the local tangent plane at the Sentinel's position and
- * rotates within it, so the shield is always "sideways" relative to the moon —
- * which is the plane the player actually approaches through.
- * @hot-path
- */
-export function sentinelShieldNormal(out: Vec3, world: Readonly<World>, slot: number): Vec3 {
-  const enemies = world.enemies
-  scratch.x = enemies.body.x[slot] as number
-  scratch.y = enemies.body.y[slot] as number
-  scratch.z = enemies.body.z[slot] as number
-  normalize(scratch)
-
-  cross(tangentA, scratch, WORLD_UP)
-  if (length(tangentA) < 1e-6) cross(tangentA, scratch, WORLD_FORWARD)
-  normalize(tangentA)
-  cross(tangentB, scratch, tangentA)
-  normalize(tangentB)
-
-  const angle = enemies.shieldAngle[slot] as number
-  out.x = tangentA.x * Math.cos(angle) + tangentB.x * Math.sin(angle)
-  out.y = tangentA.y * Math.cos(angle) + tangentB.y * Math.sin(angle)
-  out.z = tangentA.z * Math.cos(angle) + tangentB.z * Math.sin(angle)
-  return normalize(out)
-}
-
-const WORLD_UP: Vec3 = { x: 0, y: 1, z: 0 }
-const WORLD_FORWARD: Vec3 = { x: 0, y: 0, z: 1 }
 
 /**
  * True when an impact arriving from `fromDirection` is stopped by the shield.

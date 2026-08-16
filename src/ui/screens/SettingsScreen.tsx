@@ -183,7 +183,6 @@ export function SettingsScreen() {
                 value={settings.display.colorMode === 'high-contrast'}
                 onChange={(v) => {
                   updateSettings((s) => ({ ...s, display: { ...s.display, colorMode: v ? 'high-contrast' : 'default' } }))
-                  document.documentElement.setAttribute('data-contrast', v ? 'high' : 'default')
                 }}
               />
               <Slider
@@ -191,7 +190,6 @@ export function SettingsScreen() {
                 min={75} max={150} value={settings.display.hudScale}
                 onChange={(v) => {
                   updateSettings((s) => ({ ...s, display: { ...s.display, hudScale: v } }))
-                  document.documentElement.style.setProperty('--hud-scale', String(v / 100))
                 }}
               />
             </div>

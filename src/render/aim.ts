@@ -14,15 +14,9 @@ import * as THREE from 'three'
 import type { World } from '../game/core/World.ts'
 import { GameEvent } from '../game/core/World.ts'
 import {
-  bombImpact,
-  bombImpactTime,
-  bombImpactValid,
-  leadAim,
-  leadValid,
-  reticleAim,
-  reticleMagnetised,
+  Aim,
   trackedTarget,
-} from '../game/systems/WeaponSystem.ts'
+} from '../game/core/view.ts'
 import { archetypeOf } from '../game/data/enemies.ts'
 import { LOCK_TIME } from '../game/data/constants.ts'
 import type { AimFrame } from '../state/hudRefs.ts'
@@ -127,12 +121,12 @@ export function projectAim(
     return
   }
 
-  out.magnetised = reticleMagnetised
+  out.magnetised = Aim.reticleMagnetised
   out.overheated = craft.weapon.kind === 'Overheated'
 
   // ---- crosshair ----
   {
-    const distance = project(reticleAim.x, reticleAim.y, reticleAim.z, camera, width, height, scratchPoint)
+    const distance = project(Aim.reticle.x, Aim.reticle.y, Aim.reticle.z, camera, width, height, scratchPoint)
     out.crosshairVisible = distance > 0
     out.crosshairX = scratchPoint.x
     out.crosshairY = scratchPoint.y
@@ -143,8 +137,8 @@ export function projectAim(
   // Suppressed in missile mode: the missile does its own leading, and a pip
   // telling the player to aim off-target for a weapon that steers itself would
   // be advice the weapon ignores.
-  if (leadValid && craft.activeWeaponMode === 'cannon') {
-    const distance = project(leadAim.x, leadAim.y, leadAim.z, camera, width, height, scratchPoint)
+  if (Aim.leadValid && craft.activeWeaponMode === 'cannon') {
+    const distance = project(Aim.lead.x, Aim.lead.y, Aim.lead.z, camera, width, height, scratchPoint)
     // Hidden when it would sit on top of the crosshair: two marks a few pixels
     // apart read as a rendering fault, not as a lead.
     const dx = scratchPoint.x - out.crosshairX
@@ -182,12 +176,12 @@ export function projectAim(
   }
 
   // ---- bomb impact ----
-  if (bombImpactValid) {
-    const distance = project(bombImpact.x, bombImpact.y, bombImpact.z, camera, width, height, scratchPoint)
+  if (Aim.bombImpactValid) {
+    const distance = project(Aim.bombImpact.x, Aim.bombImpact.y, Aim.bombImpact.z, camera, width, height, scratchPoint)
     out.bombVisible = distance > 0
     out.bombX = scratchPoint.x
     out.bombY = scratchPoint.y
-    out.bombTime = bombImpactTime
+    out.bombTime = Aim.bombImpactTime
     // Only for placing the caption clear of the glyph — the footprint itself is
     // a scene object now, so the HUD no longer needs its apparent size.
     out.bombRadius = 28

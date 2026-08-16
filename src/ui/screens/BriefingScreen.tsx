@@ -38,6 +38,7 @@ export function BriefingScreen() {
    * teaches them not to read the next one.
    */
   useEffect(() => {
+    setRemaining(BRIEFING_DURATION)
     const started = performance.now()
     let handle = 0
     const tick = (): void => {
@@ -51,9 +52,21 @@ export function BriefingScreen() {
     }
     handle = window.setTimeout(tick, 100)
     return () => window.clearTimeout(handle)
-  }, [goto])
+  }, [goto, waveNumber])
 
-  if (wave === undefined) return null
+  if (wave === undefined) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.content}>
+          <h2 className={styles.title}>BRIEFING UNAVAILABLE</h2>
+          <p className={styles.description}>This wave has no briefing on file.</p>
+          <div className={styles.actions}>
+            <Button label="RETURN TO MENU" primary onClick={() => goto('Title')} full />
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const drainSeconds = drainDuration(wave, DRAIN_RATE_PER_HARVESTER)
 

@@ -11,7 +11,11 @@ import { App } from './ui/App.tsx'
 import './styles/tokens.css'
 import './styles/base.css'
 import './styles/fonts.css'
+import { applyDisplaySettings } from './state/applyDisplaySettings.ts'
+import { useSettingsStore } from './state/useSettingsStore.ts'
 import { logError } from './debug/logger.ts'
+
+applyDisplaySettings(useSettingsStore.getState().settings)
 
 const container = document.getElementById('root')
 

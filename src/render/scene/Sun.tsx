@@ -20,7 +20,7 @@
  * All three are on `depthWrite: false` so nothing in the sky occludes anything
  * else in the sky, and the whole group sits well outside the play shell.
  */
-import { useMemo } from 'react'
+import { useMemo, useEffect } from 'react'
 import * as THREE from 'three'
 import { registry } from '../disposal.ts'
 import type { WorldPalette } from '../../game/data/worlds.ts'
@@ -113,6 +113,17 @@ export function Sun({ palette, meshRef, materialRef, coronaMaterialRef }: SunPro
 
     return { discGeometry, discMaterial, coronaGeometry, coronaMaterial, spike }
   }, [palette.sun])
+
+  useEffect(() => {
+    return () => {
+      registry.release(parts.discGeometry)
+      registry.release(parts.discMaterial)
+      registry.release(parts.coronaGeometry)
+      registry.release(parts.coronaMaterial)
+      if (parts.spike.map) registry.release(parts.spike.map)
+      registry.release(parts.spike)
+    }
+  }, [parts])
 
   /*
    * `uTime` is driven from `RenderBridge`, not from here.

@@ -41,9 +41,11 @@ export function PlayingScreen({ showHint = true }: { showHint?: boolean }) {
           <div className={styles.waveLabel}>
             WAVE <span ref={(el) => { hudRefs.waveText = el }}>1</span>
           </div>
-          <div className={styles.drawCalls}>
-            DC: <span ref={(el) => { hudRefs.drawCallsText = el }}>0</span>
-          </div>
+          {import.meta.env.DEV && (
+            <div className={styles.drawCalls}>
+              DC: <span ref={(el) => { hudRefs.drawCallsText = el }}>0</span>
+            </div>
+          )}
         </div>
 
         {/* Left: Outposts */}

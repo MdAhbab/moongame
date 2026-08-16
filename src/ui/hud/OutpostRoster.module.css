@@ -87,6 +87,12 @@
   }
 }
 
+:global(html[data-reduced-motion='true']) .drainIcon,
+:global(html[data-reduced-motion='true']) .rowCritical {
+  animation: none;
+  font-weight: bold;
+}
+
 /* Mobile responsive */
 @media (max-width: 767px) {
   .rosterList {

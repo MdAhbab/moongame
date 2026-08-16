@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useEffect } from 'react'
 import * as THREE from 'three'
 import { Random } from '../../game/core/Random.ts'
 import { Materials } from '../materials/registry.ts'
@@ -50,6 +50,13 @@ export function Boulders({ tier, seed }: { tier: 'High' | 'Medium' | 'Low'; seed
     registry.track(inst)
     return inst
   }, [tier, seed])
+
+  useEffect(() => {
+    return () => {
+      registry.release(mesh.geometry)
+      registry.release(mesh)
+    }
+  }, [mesh])
 
   return <primitive object={mesh} />
 }

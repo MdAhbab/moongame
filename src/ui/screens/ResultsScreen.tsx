@@ -14,14 +14,14 @@ export function ResultsScreen() {
   const addPilotXp = useSettingsStore(s => s.addPilotXp)
   const addCredits = useSettingsStore(s => s.addCredits)
   const unlockAchievement = useSettingsStore(s => s.unlockAchievement)
-  const awardedRef = useRef(false)
+  const awardedSeedRef = useRef<string | null>(null)
 
-  // Award XP and PB exactly once when the screen mounts.
+  // Award XP and PB exactly once per run seed.
   // Must be unconditional (before the early return) to follow hooks rules.
   useEffect(() => {
     if (!runSummary) return
-    if (awardedRef.current) return
-    awardedRef.current = true
+    if (awardedSeedRef.current === runSummary.seed) return
+    awardedSeedRef.current = runSummary.seed
 
     const pbDelta = runSummary.finalScore - bestScore
     if (pbDelta > 0) {
@@ -59,7 +59,7 @@ export function ResultsScreen() {
     if (runSummary.accuracy >= 0.8) unlockAchievement('deadEye')
     if (runSummary.victory) unlockAchievement('trophyIron')
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [runSummary?.seed])
 
   // A screen with nothing to show still has to be a screen.
   //

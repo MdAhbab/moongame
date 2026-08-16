@@ -157,7 +157,7 @@ export function ThreatRing({ size = 300 }: { size?: number }) {
           {/* An invisible, generous hit area. The glyphs are 10 units across,
               which is well under the 44 px minimum touch target once the ring
               is scaled down (§35). */}
-          <circle className="hit" r={11} fill="transparent" stroke="none" />
+          <circle className="hit" r={16} fill="transparent" stroke="none" />
           {/* We rely on CSS classes (e.g. pulse-fast) and inline strokes being updated 
               if needed. Since we only pre-allocate nodes, we might need a way to change 
               the shape dynamically if the pool is reused.

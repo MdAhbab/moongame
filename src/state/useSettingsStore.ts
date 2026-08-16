@@ -1,6 +1,7 @@
 // src/state/useSettingsStore.ts
 import { create } from 'zustand'
 import { loadData, saveData, defaultData, MAX_BINDINGS_PER_ACTION, type PersistedData, type Settings, type Progress, type Action, type Binding } from './persistence'
+import { applyDisplaySettings } from './applyDisplaySettings.ts'
 import type { Slot } from '../game/data/parts.ts'
 
 interface SettingsState extends PersistedData {
@@ -46,6 +47,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     const newSettings = updater(state.settings)
     const newData = { ...state, settings: newSettings }
     saveData(newData)
+    applyDisplaySettings(newSettings)
     return { settings: newSettings }
   }),
   
@@ -81,6 +83,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   
   resetToDefaults: () => {
     saveData(defaultData)
+    applyDisplaySettings(defaultData.settings)
     set({ ...defaultData })
   },
 

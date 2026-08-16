@@ -35,6 +35,7 @@
  */
 import type { World } from '../core/World.ts'
 import { GameEvent } from '../core/World.ts'
+import { Aim } from '../core/view.ts'
 import { type Vec3, addScaled, copy, create, dot, length, normalize, sub } from '../math/vec3.ts'
 import { clamp } from '../physics/springs.ts'
 import { spawnProjectile } from '../entities/Projectile.ts'
@@ -82,52 +83,15 @@ const bombVelocity: Vec3 = create()
 const fireDirection: Vec3 = create()
 
 /**
- * The reticle's magnetised aim point, in world space.
+ * The reticle's magnetised aim point lives on `Aim` in `core/view.ts`.
  *
  * Read by the render layer to draw the crosshair, **and by `fire()` to aim the
  * round**. One point, two consumers, no possible disagreement between what the
  * player sees and what the gun does. At Aim Assist 0 it is the bare nose ray.
  */
-export const reticleAim: Vec3 = create()
-/** True while the reticle is magnetised onto something. */
-export let reticleMagnetised = false
-
-/* ------------------------------------------------------------------ */
-/* Aim solutions, published for the HUD                                */
-/* ------------------------------------------------------------------ */
-
-/**
- * Where the tracked target will be when a bullet fired now could reach it.
- *
- * Solved rather than guessed: with the target at `p` moving at `v` relative to
- * the craft and a bullet at speed `s`, the intercept time is the positive root
- * of `|p + v·t| = s·t`, which is a plain quadratic. Drawn as a second, hollow
- * pip so the player can see the difference between where a thing *is* and where
- * to shoot — the whole skill of deflection shooting, made teachable.
- *
- * Presentation only, and it stays that way: the lead pip is *advice*, not aim.
- * Assist pulls the crosshair toward where the target **is**; leading it is the
- * player's job, and the pip teaches the shape of the correction rather than
- * applying it for them.
- */
-export const leadAim: Vec3 = create()
-/** True when `leadAim` holds a real solution this step. */
-export let leadValid = false
-
-/**
- * Where a bomb released *this instant* would strike the surface.
- *
- * Integrated with the same radial-gravity stepper the bombs themselves run, at
- * the same fixed `dt`, from the same launch velocity — so the marker is not an
- * approximation of the trajectory, it *is* the trajectory. Anything less would
- * be a HUD that lies about the physics, which is the exact failure §8.4 exists
- * to forbid.
- */
-export const bombImpact: Vec3 = create()
-/** True when the bomb solution converged on the surface within its flight time. */
-export let bombImpactValid = false
-/** Seconds of fall between release and impact, for the marker's readout. */
-export let bombImpactTime = 0
+const reticleAim = Aim.reticle
+const leadAim = Aim.lead
+const bombImpact = Aim.bombImpact
 
 /** @hot-path */
 export function stepWeapons(world: World, dt: number): void {
@@ -192,12 +156,6 @@ export function stepWeapons(world: World, dt: number): void {
 /** The enemy slot a completed lock is holding, or -1. */
 export function lockedTarget(world: Readonly<World>): number {
   return world.craft.lock.kind === 'Locked' ? world.craft.lock.target : -1
-}
-
-/** The enemy slot the lock is working on or holding, or -1. Used by the HUD. */
-export function trackedTarget(world: Readonly<World>): number {
-  const lock = world.craft.lock
-  return lock.kind === 'Idle' ? -1 : lock.target
 }
 
 /**
@@ -585,7 +543,7 @@ function updateAssist(world: World): void {
 
   copy(reticleAim, craft.position)
   addScaled(reticleAim, craft.nose, 200)
-  reticleMagnetised = false
+  Aim.reticleMagnetised = false
   assistTarget = -1
 
   if (!craft.alive) return
@@ -623,7 +581,7 @@ function updateAssist(world: World): void {
 
   sub(toTarget, targetPosition, reticleAim)
   addScaled(reticleAim, toTarget, strength)
-  reticleMagnetised = true
+  Aim.reticleMagnetised = true
 }
 
 /**
@@ -650,9 +608,9 @@ export let assistTarget = -1
 function updateAimSolutions(world: World): void {
   const craft = world.craft
 
-  leadValid = false
-  bombImpactValid = false
-  bombImpactTime = 0
+  Aim.leadValid = false
+  Aim.bombImpactValid = false
+  Aim.bombImpactTime = 0
   if (!craft.alive) return
 
   // ---- bullet lead ----
@@ -696,7 +654,7 @@ function updateAimSolutions(world: World): void {
       leadAim.x = targetPosition.x + vx * t
       leadAim.y = targetPosition.y + vy * t
       leadAim.z = targetPosition.z + vz * t
-      leadValid = true
+      Aim.leadValid = true
     }
   }
 
@@ -709,8 +667,8 @@ function updateAimSolutions(world: World): void {
     bombLaunchVelocity(bombVelocity, craft.velocity, bombDown, BOMB_SPEED)
     const fall = predictBombImpact(world, muzzle, bombVelocity, bombImpact)
     if (fall >= 0) {
-      bombImpactValid = true
-      bombImpactTime = fall
+      Aim.bombImpactValid = true
+      Aim.bombImpactTime = fall
     }
   }
 }

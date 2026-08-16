@@ -4,7 +4,13 @@
 **Scope:** `src/render/**`, `src/workers/**`, `public/models/**`, `public/hdri/**`, `public/textures/**` — **nothing else**
 **Repo root:** `moon-game-v2/`
 **Runs in parallel with:** TASK-4 (audio), TASK-5 (backend), and the main session (simulation, input, UI)
-**Status:** not started
+**Status: landed, with drift (August 2026).**
+
+The five workstreams mostly shipped: GLSL sun, planet/atmosphere/rings, craft
+glTF, HDRI environment. God-rays were tried and then removed — §17.5 forbids
+them (the moon has no atmosphere) and they dominated High-tier frame time.
+Triplanar close-up terrain and the six-world catalogue remain open. Read the
+source, not this brief, for what the layer does today.
 
 ---
 

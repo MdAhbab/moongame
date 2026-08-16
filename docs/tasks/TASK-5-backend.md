@@ -4,7 +4,12 @@
 **Scope:** `api/**`, `src/net/**`, `db/**`, `vercel.json` — plus, **in your final phase only**, `src/ui/screens/Account*.tsx` and `src/ui/screens/Leaderboard*.tsx`
 **Repo root:** `moon-game-v2/`
 **Runs in parallel with:** TASK-3 (presentation), TASK-4 (audio), and the main session
-**Status:** not started
+**Status: landed, with drift (August 2026).**
+
+Auth, cloud save, Account/Leaderboard screens and replay-verified score
+submit are in `api/` and `src/net/`. `SIM_VERSION` is 5 in
+`src/game/data/constants.ts`. The functions are optional: a static host
+without `api/` plays locally.
 
 ---
 

@@ -4,7 +4,12 @@
 **Scope:** `src/audio/**`, `tools/**`, `public/audio/**` — **nothing else**
 **Repo root:** `moon-game-v2/`
 **Runs in parallel with:** TASK-3 (presentation), TASK-5 (backend), and the main session
-**Status:** not started
+**Status: landed, with drift (August 2026).**
+
+Adaptive stems, captions API, UI bus and mute-playability are in
+`src/audio/`. Convolution reverb / Doppler remain open. The header of
+`AudioDirector.ts` is still the contract: every sound names the visual
+channel carrying the same fact.
 
 ---
 

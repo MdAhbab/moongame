@@ -96,9 +96,16 @@ export interface ScoreResult {
  * probe reuses an endpoint the Account screen would have called anyway.
  */
 let cloudProbe: Promise<boolean> | null = null
+let cloudProbeAt = 0
+const CLOUD_PROBE_TTL_MS = 30_000
 
-export function cloudAvailable(): Promise<boolean> {
-  cloudProbe ??= (async () => {
+export function cloudAvailable(options?: { refresh?: boolean }): Promise<boolean> {
+  const refresh = options?.refresh === true
+  if (!refresh && cloudProbe !== null && Date.now() - cloudProbeAt < CLOUD_PROBE_TTL_MS) {
+    return cloudProbe
+  }
+  cloudProbeAt = Date.now()
+  cloudProbe = (async () => {
     try {
       const res = await fetch('/api/account', { headers: { Accept: 'application/json' } })
       // 401/403 mean the endpoint exists and you are signed out — that is
@@ -116,6 +123,7 @@ export function cloudAvailable(): Promise<boolean> {
 /** Test seam — forgets the cached probe. */
 export function resetCloudProbe(): void {
   cloudProbe = null
+  cloudProbeAt = 0
 }
 
 /* ------------------------------------------------------------------ */

@@ -38,6 +38,16 @@
   }
 }
 
+:global(html[data-reduced-motion='true'] .pulse-fast) {
+  animation: none;
+  opacity: 1;
+}
+
+:global(html[data-reduced-motion='true'] .pulse-slow) {
+  animation: none;
+  opacity: 0.8;
+}
+
 /*
  * Hostile markers accept a tap; everything else in the ring stays transparent
  * to the pointer so a click meant for the canvas is not eaten by the HUD.

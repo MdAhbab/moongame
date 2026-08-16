@@ -1,7 +1,7 @@
 import { useMemo, useEffect, useState } from 'react'
 import * as THREE from 'three'
 import { createIcosphere } from '../geometry/icosphere.ts'
-import { Materials } from '../materials/registry.ts'
+import { Materials, setRegolithDetail } from '../materials/registry.ts'
 import { R } from '../../game/data/constants.ts'
 import { registry } from '../disposal.ts'
 
@@ -26,12 +26,23 @@ export function Moon({
     const h = createIcosphere(R, tier === 'High' ? 6 : 5)
     h.computeVertexNormals()
     registry.track(h)
-    
+
     const l = createIcosphere(R, tier === 'High' ? 4 : 3)
     l.computeVertexNormals()
     registry.track(l)
-    
-    return [h, l]
+
+    return [h, l] as const
+  }, [tier])
+
+  useEffect(() => {
+    return () => {
+      registry.release(geoHigh)
+      registry.release(geoLow)
+    }
+  }, [geoHigh, geoLow])
+
+  useEffect(() => {
+    setRegolithDetail(tier)
   }, [tier])
 
   const [textures, setTextures] = useState<{
@@ -61,14 +72,24 @@ export function Moon({
     }
 
     setTextures(nextTextures)
+    return () => {
+      if (nextTextures.albedo) registry.release(nextTextures.albedo)
+      if (nextTextures.normal) registry.release(nextTextures.normal)
+      if (nextTextures.ao) registry.release(nextTextures.ao)
+    }
   }, [albedoMap, normalMap, aoMap])
 
   useEffect(() => {
     const mat = Materials.regolith
-    if (textures.albedo) mat.map = textures.albedo
-    if (textures.normal) mat.normalMap = textures.normal
-    if (textures.ao) mat.aoMap = textures.ao
+    mat.map = textures.albedo ?? null
+    mat.normalMap = textures.normal ?? null
+    mat.aoMap = textures.ao ?? null
     mat.needsUpdate = true
+    return () => {
+      if (mat.map === (textures.albedo ?? null)) mat.map = null
+      if (mat.normalMap === (textures.normal ?? null)) mat.normalMap = null
+      if (mat.aoMap === (textures.ao ?? null)) mat.aoMap = null
+    }
   }, [textures])
 
   return (

@@ -60,7 +60,7 @@ export function AccountScreen(): React.JSX.Element {
   // Load account info on mount.
   useEffect(() => {
     void (async () => {
-      if (!(await cloudAvailable())) {
+      if (!(await cloudAvailable({ refresh: true }))) {
         setAuthStatus('unavailable')
         return
       }
@@ -136,10 +136,14 @@ export function AccountScreen(): React.JSX.Element {
 
   const handleLogout = useCallback(async () => {
     setBusy(true)
-    await logout()
-    setAccount(null)
-    setAuthStatus('unauthenticated')
-    setToast({ tone: 'info', message: 'Signed out.' })
+    try {
+      await logout()
+      setAccount(null)
+      setAuthStatus('unauthenticated')
+      setToast({ tone: 'info', message: 'Signed out.' })
+    } catch {
+      setToast({ tone: 'warning', message: 'Could not sign out. Try again.' })
+    }
     setBusy(false)
   }, [setToast])
 

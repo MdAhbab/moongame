@@ -87,11 +87,22 @@ through refs the bridge writes, and hold no hooks of their own. A file under
 nothing asserts that, which is why it was false for months.
 
 May import from `src/game/core/`, `src/game/data/` and `src/game/math/`. May
-**not** import from `src/game/systems/` — lint-enforced. Reading
+**not** import from `src/game/systems/` — lint-enforced, including relative
+paths. Presentation reads published view state from `src/game/core/view.ts`
+(`Aim`, `sentinelShieldNormal`) rather than the systems that write it. Reading
 `world.craft.position` is correct; writing it is a bug.
 
-Every geometry, material and texture passes through `src/render/disposal.ts` and
-is released on teardown.
+The Canvas stays mounted across screens, so `disposeAll()` is not the whole of
+Rule 4. World swaps and quality-tier changes must `registry.release()` the
+previous geometry, texture and light. A test in `tests/unit/renderInvariants.test.ts`
+asserts there is still exactly one `useFrame(` under `src/render/`.
+
+Post-processing is bloom and vignette only (§17.5). Volumetric god-rays were
+tried and removed: the moon has no atmosphere, and a 60-sample occlusion pass
+was the dominant High-tier cost.
+
+The directional light's shadow frustum is recentred on the craft each frame
+from that same `useFrame`.
 
 ### `src/audio/**` — the audio director
 
@@ -251,7 +262,7 @@ buttons, `localStorage` — rather than on which functions were called.
 ```
 src/
 ├── game/          simulation — headless, deterministic, no framework
-│   ├── core/      World, Simulation, Loop, Pool, Random, step, readModel
+│   ├── core/      World, Simulation, Loop, Pool, Random, step, readModel, view
 │   ├── systems/   flight, AI, collision, spawn, weapons, drain, score, HUD
 │   ├── entities/  six hostile archetypes — spawn and behaviour, one file each
 │   ├── physics/   integration, drag, gravity, springs, tangent frame, collision

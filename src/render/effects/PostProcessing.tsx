@@ -1,31 +1,13 @@
-import { useEffect, useState } from 'react'
-import type * as THREE from 'three'
 import { useThree } from '@react-three/fiber'
-import { Bloom, EffectComposer, Vignette, GodRays } from '@react-three/postprocessing'
+import { Bloom, EffectComposer, Vignette } from '@react-three/postprocessing'
 import { KernelSize } from 'postprocessing'
-import type { GodRaysEffect } from 'postprocessing'
 
 interface PostProcessingProps {
   tier: 'High' | 'Medium' | 'Low'
-  godRaysRef?: React.Ref<GodRaysEffect> | undefined
 }
 
-export function PostProcessing({ tier, godRaysRef }: PostProcessingProps) {
-  const { scene, gl } = useThree()
-  const [sun, setSun] = useState<THREE.Mesh | null>(null)
-
-  useEffect(() => {
-    if (tier !== 'High') return
-    // Find the sun mesh once mounted
-    const id = setInterval(() => {
-      const s = scene.getObjectByName('sunMesh') as THREE.Mesh
-      if (s) {
-        setSun(s)
-        clearInterval(id)
-      }
-    }, 100)
-    return () => clearInterval(id)
-  }, [scene, tier])
+export function PostProcessing({ tier }: PostProcessingProps) {
+  const { gl } = useThree()
 
   if (tier === 'Low') return null
 
@@ -53,7 +35,7 @@ export function PostProcessing({ tier, godRaysRef }: PostProcessingProps) {
   if (context === null || context.isContextLost()) return null
 
   return (
-    <EffectComposer enableNormalPass={false} multisampling={tier === 'High' ? 4 : 2}>
+    <EffectComposer enableNormalPass={false} multisampling={2}>
       <Bloom
         luminanceThreshold={0.85}
         luminanceSmoothing={0.22}
@@ -62,18 +44,6 @@ export function PostProcessing({ tier, godRaysRef }: PostProcessingProps) {
         kernelSize={tier === 'High' ? KernelSize.LARGE : KernelSize.MEDIUM}
         resolutionScale={tier === 'High' ? 1 : 0.5}
       />
-      {sun && (
-        <GodRays
-          {...(godRaysRef ? { ref: godRaysRef } : {})}
-          sun={sun}
-          samples={60}
-          density={0.96}
-          decay={0.9}
-          weight={0.4}
-          exposure={0.6}
-          clampMax={1.0}
-        />
-      )}
       <Vignette eskil={false} offset={0.22} darkness={0.78} />
     </EffectComposer>
   )

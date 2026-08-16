@@ -727,6 +727,10 @@ Independent sliders, not presets (§35.4): Enemy Damage (0–150%), Drain Rate (
 # 11. Game States
 
 Twelve canonical states. **These exact names are used in all documents and in code.**
+The routed shell also has Hangar, Profile, Account, Leaderboard and
+LegendaryChoice — meta-game screens added after this table. WaveClear does
+**not** slow-mo the simulation: menus freeze the world, because an untimed
+Debrief that kept stepping spawned the next wave into an empty room.
 
 ```
                          ┌──────────┐
@@ -775,7 +779,7 @@ Twelve canonical states. **These exact names are used in all documents and in co
 | **Briefing** | 4 s pre-wave orientation: which outposts, what's coming | ✗ | ✓ |
 | **Playing** | The game | ✓ | ✓ |
 | **Paused** | Frozen. Accumulator reset on resume. | ✗ | ✓ dimmed + blurred |
-| **WaveClear** | 3 s celebration + score breakdown | slow-mo | ✓ |
+| **WaveClear** | 3 s celebration + score breakdown | frozen | ✓ |
 | **Debrief** | Post-wave/run analysis. **Explains what happened.** | ✗ | ✓ dimmed |
 | **Results** | Final score, breakdown, PB comparison, seed | ✗ | ✓ |
 | **Credits** | Attribution, tech notes | ✗ | ✓ |
@@ -2220,7 +2224,12 @@ Rollup, Terser, tree-shaking, content-hashed filenames, manual chunks per §33.4
 
 ## 38.2 Vercel
 
-Framework preset **Vite**, output `dist`, zero configuration beyond it. Static hosting only — no serverless functions, no edge middleware, no environment variables required.
+Framework preset **Vite**, output `dist`, zero configuration beyond it. The
+game is a static SPA. Serverless functions under `api/` (accounts, saves,
+replay-verified leaderboard) are **optional**: with no environment variables
+the client detects the API is absent and plays locally. Hobby deploys may
+exclude `api/` via `.vercelignore` when the function count exceeds the plan
+limit.
 
 Headers: long-lived immutable caching for hashed assets, `no-cache` for `index.html`, plus the security headers in §39.
 

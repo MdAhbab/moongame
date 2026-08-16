@@ -36,3 +36,10 @@
     border-color: var(--critical);
   }
 }
+
+:global(html[data-reduced-motion='true']) .alertContent {
+  animation: none;
+  font-weight: bold;
+  color: var(--critical);
+  border-color: var(--critical);
+}

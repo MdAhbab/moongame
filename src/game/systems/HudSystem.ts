@@ -15,7 +15,8 @@ import type { HudFrame, MapMarker, MarkerKind, MetaSnapshot, ThreatMarker } from
 import { type Vec3, create, dot, length } from '../math/vec3.ts'
 import { bearingTo } from '../physics/tangentFrame.ts'
 import { tutorialProgressFraction } from './TutorialSystem.ts'
-import { assistTarget, bombImpactTime, bombImpactValid } from './WeaponSystem.ts'
+import { assistTarget } from './WeaponSystem.ts'
+import { Aim } from '../core/view.ts'
 import { archetypeOf } from '../data/enemies.ts'
 import { LOCK_TIME, R, THREAT_RING_MAX_RANGE } from '../data/constants.ts'
 
@@ -60,7 +61,7 @@ export function projectHudFrame(world: Readonly<World>, out: HudFrame): void {
   out.flaresRemaining = craft.flaresRemaining
 
   out.missileCooldown = craft.missileCooldown
-  out.bombFallTime = bombImpactValid ? bombImpactTime : 0
+  out.bombFallTime = Aim.bombImpactValid ? Aim.bombImpactTime : 0
   out.engineIntegrity = craft.systems.engine
   out.weaponIntegrity = craft.systems.weapon
   out.controlIntegrity = craft.systems.control

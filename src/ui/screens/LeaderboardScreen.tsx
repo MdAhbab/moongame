@@ -49,7 +49,7 @@ export function LeaderboardScreen(): React.JSX.Element {
   useEffect(() => {
     setLoading(true)
     void (async () => {
-      if (!(await cloudAvailable())) {
+      if (!(await cloudAvailable({ refresh: true }))) {
         setOffline(true)
         setHasMore(false)
         setLoading(false)

@@ -4,8 +4,7 @@ import { Environment } from '@react-three/drei'
 import * as THREE from 'three'
 import { EnemyKind, EnemyPhase } from '../game/core/World.ts'
 import type { World } from '../game/core/World.ts'
-import { sentinelShieldNormal } from '../game/entities/Sentinel.ts'
-import type { GodRaysEffect } from 'postprocessing'
+import { sentinelShieldNormal, Aim } from '../game/core/view.ts'
 import { createAimFrame, hudRefs, writeAim } from '../state/hudRefs.ts'
 import { projectAim } from './aim.ts'
 
@@ -17,7 +16,7 @@ import { Earth } from './scene/Earth.tsx'
 import { Outposts } from './scene/Outposts.tsx'
 import { Boulders } from './scene/Boulders.tsx'
 import { Craft, type CraftRefs } from './scene/Craft.tsx'
-import { Lighting } from './scene/Lighting.tsx'
+import { Lighting, SUN_OFFSET } from './scene/Lighting.tsx'
 import { BombTarget, type BombTargetRefs } from './scene/BombTarget.tsx'
 
 // Instanced
@@ -34,7 +33,6 @@ import { CameraRigController } from './effects/CameraRig.tsx'
 import { PostProcessing } from './effects/PostProcessing.tsx'
 import { EngineTrail, type EngineTrailRefs } from './effects/EngineTrail.tsx'
 import { BOMB_BLAST_RADIUS, R, SAPPER_ARM_TIME, WARDEN_FIELD_RADIUS, WINDUP_TIME } from '../game/data/constants.ts'
-import { bombImpact, bombImpactValid } from '../game/systems/WeaponSystem.ts'
 import {
   DIVE_SWELL,
   DRONE_GLOW_DEPTH,
@@ -248,7 +246,7 @@ export function RenderBridge({
   const sunCoronaMaterialRef = useRef<THREE.ShaderMaterial>(null)
   const moonHighRef = useRef<THREE.Mesh>(null)
   const moonLowRef = useRef<THREE.Mesh>(null)
-  const godRaysRef = useRef<GodRaysEffect>(null)
+  const sunLightRef = useRef<THREE.DirectionalLight>(null)
 
   // Pre-allocated scratch objects for zero allocation useFrame
   const scratch = useMemo(() => ({
@@ -270,11 +268,13 @@ export function RenderBridge({
     frustum: new THREE.Frustum(),
     viewDir: new THREE.Vector3(),
     sunPos: new THREE.Vector3(),
+    sunOffset: SUN_OFFSET.clone(),
   }), [])
 
   useFrame((_, delta) => {
     // 1. Advance the simulation. Both conditions must hold: the UI has to want
-    // the world to run (`stepping`) *and* the world has to be in a phase that
+    // the world to run (`stepping`, from `screenRunsSimulation` /
+    // `screenAnimatesAttract`) *and* the world has to be in a phase that
     // advances. Either alone was a bug — phase alone let wave 2 spawn behind the
     // untimed Debrief, and `stepping` alone would run the RunOver phase forever.
     // `Respawning` is in this list, and its absence was fatal.
@@ -419,6 +419,15 @@ export function RenderBridge({
       world.craft.boostActive,
       reducedMotion === true,
     )
+
+    // Shadow frustum follows the craft so the 180 u map is spent on the
+    // playfield, not on the far side of the moon (§16.1).
+    const sunLight = sunLightRef.current
+    if (sunLight !== null && sunLight.castShadow) {
+      sunLight.position.copy(craftWorldPos).add(scratch.sunOffset)
+      sunLight.target.position.copy(craftWorldPos)
+      sunLight.target.updateMatrixWorld()
+    }
 
     // 4. Update Enemies
     //
@@ -790,21 +799,6 @@ export function RenderBridge({
     if (moonHighRef.current) moonHighRef.current.visible = isMoonClose
     if (moonLowRef.current) moonLowRef.current.visible = !isMoonClose
 
-    if (tier === 'High' && godRaysRef.current && sunMeshRef.current) {
-      const { projScreenMatrix, frustum, viewDir, sunPos } = scratch
-      projScreenMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse)
-      frustum.setFromProjectionMatrix(projScreenMatrix)
-
-      const isVisible = frustum.intersectsObject(sunMeshRef.current)
-
-      camera.getWorldDirection(viewDir)
-      sunMeshRef.current.getWorldPosition(sunPos)
-      sunPos.sub(camera.position).normalize()
-
-      godRaysRef.current.blendMode.opacity.value =
-        isVisible && viewDir.dot(sunPos) > 0 ? 1.0 : 0.0
-    }
-
     // 8.55 The bomb's footprint, laid on the ground it will actually cover.
     //
     // Oriented by the surface normal at the impact point, which on a sphere is
@@ -813,11 +807,11 @@ export function RenderBridge({
     // for viewing angle.
     if (bombTargetRef.current) {
       const { ring, stake } = bombTargetRef.current
-      const show = bombImpactValid && world.craft.alive && world.phase.kind !== 'Attract'
+      const show = Aim.bombImpactValid && world.craft.alive && world.phase.kind !== 'Attract'
       ring.visible = show
       stake.visible = show
       if (show) {
-        dir.set(bombImpact.x, bombImpact.y, bombImpact.z).normalize()
+        dir.set(Aim.bombImpact.x, Aim.bombImpact.y, Aim.bombImpact.z).normalize()
         const blast = BOMB_BLAST_RADIUS * (world.activePerks.includes('orbital_bombs') ? 1.6 : 1)
 
         // Lifted clear of the surface so the ring is not buried in the crater
@@ -875,12 +869,12 @@ export function RenderBridge({
         <Environment files="/hdri/env.hdr" />
       </Suspense>
       <Moon albedoMap={albedoMap ?? undefined} normalMap={normalMap ?? undefined} aoMap={aoMap ?? undefined} tier={tier} highRef={moonHighRef} lowRef={moonLowRef} />
-      <Starfield seed={Number(world.runSeed.replace(/\D/g, '')) || 123} density={starDensity} />
+      <Starfield seed={Number(world.runSeed.replace(/\D/g, '')) || 123} density={starDensity} tier={tier} />
       <Sun palette={palette} meshRef={sunMeshRef} materialRef={sunMaterialRef} coronaMaterialRef={sunCoronaMaterialRef} />
       <Earth palette={palette} />
       <Outposts />
       <Boulders tier={tier} seed={Number(world.runSeed.replace(/\D/g, '')) || 123} />
-      <Lighting tier={tier} palette={palette} />
+      <Lighting tier={tier} palette={palette} sunRef={sunLightRef} />
 
       {/* Dynamic Entities */}
       <Craft ref={craftRef} />
@@ -895,7 +889,7 @@ export function RenderBridge({
       <BombTarget ref={bombTargetRef} />
 
       {/* Effects */}
-      <PostProcessing tier={tier} godRaysRef={godRaysRef} />
+      <PostProcessing tier={tier} />
     </>
   )
 }
